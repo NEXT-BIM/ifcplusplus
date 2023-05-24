@@ -82,7 +82,7 @@ endif()
 add_library(IfcPlusPlus STATIC ${IFCPP_SOURCE_FILES})
 
 TARGET_INCLUDE_DIRECTORIES(IfcPlusPlus
-    PRIVATE
+    PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/src
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/ifcpp/IFC4X3/include
