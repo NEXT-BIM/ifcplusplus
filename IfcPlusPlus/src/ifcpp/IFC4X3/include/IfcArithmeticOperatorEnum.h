@@ -11,7 +11,7 @@
 
 namespace IFC4X3
 {
-	// TYPE IfcArithmeticOperatorEnum = ENUMERATION OF	(ADD	,DIVIDE	,MULTIPLY	,SUBTRACT);
+	// TYPE IfcArithmeticOperatorEnum = ENUMERATION OF	(ADD	,DIVIDE	,MODULO	,MULTIPLY	,SUBTRACT);
 	class IFCQUERY_EXPORT IfcArithmeticOperatorEnum : virtual public BuildingObject
 	{
 	public:
@@ -19,6 +19,7 @@ namespace IFC4X3
 		{
 			ENUM_ADD,
 			ENUM_DIVIDE,
+			ENUM_MODULO,
 			ENUM_MULTIPLY,
 			ENUM_SUBTRACT
 		};
@@ -26,7 +27,7 @@ namespace IFC4X3
 		IfcArithmeticOperatorEnum() = default;
 		IfcArithmeticOperatorEnum( IfcArithmeticOperatorEnumEnum e ) { m_enum = e; }
 		virtual uint32_t classID() const { return 373436428; }
-		virtual void getStepParameter( std::stringstream& stream, bool is_select_type = false ) const;
+		virtual void getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const;
 		static shared_ptr<IfcArithmeticOperatorEnum> createObjectFromSTEP( const std::string& arg, const std::map<int,shared_ptr<BuildingEntity> >& map, std::stringstream& errorStream );
 		IfcArithmeticOperatorEnumEnum m_enum;
 	};

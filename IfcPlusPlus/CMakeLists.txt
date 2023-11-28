@@ -2,12 +2,9 @@ cmake_minimum_required (VERSION 3.6...3.9)
 project(IfcPlusPlus)
 
 ADD_DEFINITIONS(-DIFCQUERY_STATIC_LIB)
-ADD_DEFINITIONS(-DGLM_FORCE_CTOR_INIT)
-ADD_DEFINITIONS(-DGLM_FORCE_XYZW_ONLY)
 ADD_DEFINITIONS(-D_HAS_AUTO_PTR_ETC=1)
 ADD_DEFINITIONS(-DUNICODE)
 ADD_DEFINITIONS(-D_UNICODE)
-ADD_DEFINITIONS(-DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD C++17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -38,21 +35,8 @@ set(IFCPP_SOURCE_FILES
     src/ifcpp/reader/ReaderUtil.cpp
     src/ifcpp/writer/WriterSTEP.cpp
     src/ifcpp/writer/WriterUtil.cpp
-	src/external/manifold/src/boolean3.cpp
-    src/external/manifold/src/boolean_result.cpp
-    src/external/manifold/src/collider/src/collider.cpp
-    src/external/manifold/src/constructors.cpp
-    src/external/manifold/src/csg_tree.cpp
-    src/external/manifold/src/edge_op.cpp
-    src/external/manifold/src/face_op.cpp
-    src/external/manifold/src/impl.cpp
-    src/external/manifold/src/manifold.cpp
-    src/external/manifold/src/polygon/src/polygon.cpp
-    src/external/manifold/src/properties.cpp
-    src/external/manifold/src/smoothing.cpp
-    src/external/manifold/src/sort.cpp
-    src/external/manifold/src/third_party/graphlite/src/connected_components.cpp
-    src/external/manifold/src/utilities/src/detect_cuda.cpp
+	src/ifcpp/geometry/MeshOps.cpp
+	src/ifcpp/geometry/GeometryInputData.cpp
 	src/external/Carve/src/lib/aabb.cpp
 	src/external/Carve/src/lib/carve.cpp
 	src/external/Carve/src/lib/convex_hull.cpp
@@ -82,27 +66,16 @@ set(IFCPP_SOURCE_FILES
 	src/external/Carve/src/lib/timing.cpp
 	src/external/Carve/src/lib/triangle_intersection.cpp
 	src/external/Carve/src/lib/triangulator.cpp
-	src/external/Carve/src/common/geometry.cpp  
+	src/external/Carve/src/common/geometry.cpp
+	src/external/zip-master/zip.c
 )
     
 if (MSVC)
-	set(IFCPP_SOURCE_FILES 
-        src/external/XUnzip.cpp  # do not add src/external/XUnzip.cpp on unix platforms
-        ${IFCPP_SOURCE_FILES})
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj ")
 	set_source_files_properties(src/ifcpp/IFC4X3/EntityFactory.cpp PROPERTIES COMPILE_FLAGS /bigobj)
 	set_source_files_properties(src/ifcpp/IFC4X3/TypeFactory.cpp PROPERTIES COMPILE_FLAGS /bigobj)
 endif()
 
 add_library(IfcPlusPlus STATIC ${IFCPP_SOURCE_FILES})
-
-if(OpenMP_CXX_FOUND)
-	ADD_DEFINITIONS(-DENABLE_OPENMP)
-    TARGET_LINK_LIBRARIES(IfcPlusPlus 
-		optimized OpenMP::OpenMP_CXX
-		${VC_LIBS})
-endif()
-
 
 TARGET_INCLUDE_DIRECTORIES(IfcPlusPlus
     PUBLIC
@@ -117,15 +90,6 @@ TARGET_INCLUDE_DIRECTORIES(IfcPlusPlus
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/Carve/src/common
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/Carve/build/src
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/glm
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/utilities/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/utilities
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/polygon/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/manifold/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/collider/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/third_party
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/third_party/thrust
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/third_party/graphlite/include
 )
 
 

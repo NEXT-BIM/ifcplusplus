@@ -10,11 +10,11 @@
 
 namespace IFC4X3
 {
-	// TYPE IfcSimpleValue = SELECT	(IfcBinary	,IfcBoolean	,IfcDate	,IfcDateTime	,IfcDuration	,IfcIdentifier	,IfcInteger	,IfcLabel	,IfcLogical	,IfcPositiveInteger	,IfcReal	,IfcText	,IfcTime	,IfcTimeStamp);
+	// TYPE IfcSimpleValue = SELECT	(IfcBinary	,IfcBoolean	,IfcDate	,IfcDateTime	,IfcDuration	,IfcIdentifier	,IfcInteger	,IfcLabel	,IfcLogical	,IfcPositiveInteger	,IfcReal	,IfcText	,IfcTime	,IfcTimeStamp	,IfcURIReference);
 	class IFCQUERY_EXPORT IfcSimpleValue : public IfcValue
 	{
 	public:
-		virtual void getStepParameter( std::stringstream& stream, bool is_select_type = false ) const = 0;
+		virtual void getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const = 0;
 		static shared_ptr<IfcSimpleValue> createObjectFromSTEP( const std::string& arg, const std::map<int,shared_ptr<BuildingEntity> >& map, std::stringstream& errorStream );
 	};
 }

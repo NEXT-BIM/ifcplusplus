@@ -9,11 +9,11 @@
 
 namespace IFC4X3
 {
-	// TYPE IfcCurveMeasureSelect = SELECT	(IfcNonNegativeLengthMeasure	,IfcParameterValue);
+	// TYPE IfcCurveMeasureSelect = SELECT	(IfcLengthMeasure	,IfcParameterValue);
 	class IFCQUERY_EXPORT IfcCurveMeasureSelect : virtual public BuildingObject
 	{
 	public:
-		virtual void getStepParameter( std::stringstream& stream, bool is_select_type = false ) const = 0;
+		virtual void getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const = 0;
 		static shared_ptr<IfcCurveMeasureSelect> createObjectFromSTEP( const std::string& arg, const std::map<int,shared_ptr<BuildingEntity> >& map, std::stringstream& errorStream );
 	};
 }

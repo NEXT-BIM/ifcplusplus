@@ -7,11 +7,12 @@
 #include "ifcpp/writer/WriterUtil.h"
 #include "ifcpp/model/BasicTypes.h"
 #include "ifcpp/model/BuildingException.h"
+#include "ifcpp/IFC4X3/include/IfcSimpleValue.h"
 #include "ifcpp/IFC4X3/include/IfcURIReference.h"
 
 // TYPE IfcURIReference = STRING;
 IFC4X3::IfcURIReference::IfcURIReference( std::string value ) { m_value = value; }
-void IFC4X3::IfcURIReference::getStepParameter( std::stringstream& stream, bool is_select_type ) const
+void IFC4X3::IfcURIReference::getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const
 {
 	if( is_select_type ) { stream << "IFCURIREFERENCE("; }
 	stream << "'" << encodeStepString( m_value ) << "'";

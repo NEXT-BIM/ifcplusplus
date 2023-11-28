@@ -11,20 +11,21 @@
 
 namespace IFC4X3
 {
-	// TYPE IfcRailwayPartTypeEnum = ENUMERATION OF	(DILATATIONSUPERSTRUCTURE	,LINESIDESTRUCTURE	,LINESIDESTRUCTUREPART	,PLAINTRACKSUPERSTRUCTURE	,SUPERSTRUCTURE	,TRACKSTRUCTURE	,TRACKSTRUCTUREPART	,TURNOUTSUPERSTRUCTURE	,USERDEFINED	,NOTDEFINED);
+	// TYPE IfcRailwayPartTypeEnum = ENUMERATION OF	(ABOVETRACK	,DILATIONTRACK	,LINESIDE	,LINESIDEPART	,PLAINTRACK	,SUBSTRUCTURE	,TRACK	,TRACKPART	,TURNOUTTRACK	,USERDEFINED	,NOTDEFINED);
 	class IFCQUERY_EXPORT IfcRailwayPartTypeEnum : virtual public BuildingObject
 	{
 	public:
 		enum IfcRailwayPartTypeEnumEnum
 		{
-			ENUM_DILATATIONSUPERSTRUCTURE,
-			ENUM_LINESIDESTRUCTURE,
-			ENUM_LINESIDESTRUCTUREPART,
-			ENUM_PLAINTRACKSUPERSTRUCTURE,
-			ENUM_SUPERSTRUCTURE,
-			ENUM_TRACKSTRUCTURE,
-			ENUM_TRACKSTRUCTUREPART,
-			ENUM_TURNOUTSUPERSTRUCTURE,
+			ENUM_ABOVETRACK,
+			ENUM_DILATIONTRACK,
+			ENUM_LINESIDE,
+			ENUM_LINESIDEPART,
+			ENUM_PLAINTRACK,
+			ENUM_SUBSTRUCTURE,
+			ENUM_TRACK,
+			ENUM_TRACKPART,
+			ENUM_TURNOUTTRACK,
 			ENUM_USERDEFINED,
 			ENUM_NOTDEFINED
 		};
@@ -32,7 +33,7 @@ namespace IFC4X3
 		IfcRailwayPartTypeEnum() = default;
 		IfcRailwayPartTypeEnum( IfcRailwayPartTypeEnumEnum e ) { m_enum = e; }
 		virtual uint32_t classID() const { return 2181869104; }
-		virtual void getStepParameter( std::stringstream& stream, bool is_select_type = false ) const;
+		virtual void getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const;
 		static shared_ptr<IfcRailwayPartTypeEnum> createObjectFromSTEP( const std::string& arg, const std::map<int,shared_ptr<BuildingEntity> >& map, std::stringstream& errorStream );
 		IfcRailwayPartTypeEnumEnum m_enum;
 	};

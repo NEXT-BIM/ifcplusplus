@@ -9,8 +9,8 @@
 #include "ifcpp/model/BuildingException.h"
 #include "ifcpp/IFC4X3/include/IfcCableCarrierFittingTypeEnum.h"
 
-// TYPE IfcCableCarrierFittingTypeEnum = ENUMERATION OF	(BEND	,CONNECTOR	,CROSS	,JUNCTION	,TEE	,TRANSITION	,USERDEFINED	,NOTDEFINED);
-void IFC4X3::IfcCableCarrierFittingTypeEnum::getStepParameter( std::stringstream& stream, bool is_select_type ) const
+// TYPE IfcCableCarrierFittingTypeEnum = ENUMERATION OF	(BEND	,CONNECTOR	,CROSS	,JUNCTION	,REDUCER	,TEE	,TRANSITION	,USERDEFINED	,NOTDEFINED);
+void IFC4X3::IfcCableCarrierFittingTypeEnum::getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const
 {
 	if( is_select_type ) { stream << "IFCCABLECARRIERFITTINGTYPEENUM("; }
 	switch( m_enum )
@@ -19,6 +19,7 @@ void IFC4X3::IfcCableCarrierFittingTypeEnum::getStepParameter( std::stringstream
 		case ENUM_CONNECTOR:	stream << ".CONNECTOR."; break;
 		case ENUM_CROSS:	stream << ".CROSS."; break;
 		case ENUM_JUNCTION:	stream << ".JUNCTION."; break;
+		case ENUM_REDUCER:	stream << ".REDUCER."; break;
 		case ENUM_TEE:	stream << ".TEE."; break;
 		case ENUM_TRANSITION:	stream << ".TRANSITION."; break;
 		case ENUM_USERDEFINED:	stream << ".USERDEFINED."; break;
@@ -46,6 +47,10 @@ shared_ptr<IFC4X3::IfcCableCarrierFittingTypeEnum> IFC4X3::IfcCableCarrierFittin
 	else if( std_iequal( arg, ".JUNCTION." ) )
 	{
 		type_object->m_enum = IfcCableCarrierFittingTypeEnum::ENUM_JUNCTION;
+	}
+	else if( std_iequal( arg, ".REDUCER." ) )
+	{
+		type_object->m_enum = IfcCableCarrierFittingTypeEnum::ENUM_REDUCER;
 	}
 	else if( std_iequal( arg, ".TEE." ) )
 	{

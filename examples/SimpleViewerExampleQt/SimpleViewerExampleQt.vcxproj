@@ -150,8 +150,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>WIN32;WIN64;_WINDOWS;WINDOWS;UNICODE;_UNICODE;_DEBUG;_CRT_SECURE_NO_WARNINGS;_MBCS;GLM_FORCE_CTOR_INIT;GLM_FORCE_XYZW_ONLY;THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP;IFCQUERY_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;../../IfcPlusPlus/src/external;../../IfcPlusPlus/src/external/Carve/include;../../IfcPlusPlus/src/external/Carve/src;../../IfcPlusPlus/src/external/Carve/src/include;../../IfcPlusPlus/src/external/Carve/src/common;../../IfcPlusPlus/src/external/Carve/build/src;.;.\src;..\..\IfcPlusPlus\src;..\..\IfcPlusPlus\src\ifcpp\IFC4X3\include;..\..\IfcPlusPlus\src\external;..\..\IfcPlusPlus\src\external\glm;$(OSG_DIR)\include;$(OSG_DIR)\build\include;../../IfcPlusPlus/src/external/manifold/src/utilities/include;../../IfcPlusPlus/src/external/manifold/src/utilities;../../IfcPlusPlus/src/external/manifold/src/polygon/include;../../IfcPlusPlus/src/external/manifold/src/manifold/include;../../IfcPlusPlus/src/external/manifold/src;../../IfcPlusPlus/src/external\manifold\src\collider\include;../../IfcPlusPlus/src/external/manifold/src/third_party;../../IfcPlusPlus/src/external/manifold/src/third_party/thrust;../../IfcPlusPlus/src/external/manifold/src/third_party/graphlite/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;WIN64;_WINDOWS;WINDOWS;UNICODE;_UNICODE;_DEBUG;_CRT_SECURE_NO_WARNINGS;_MBCS;IFCQUERY_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;../../IfcPlusPlus/src/external;../../IfcPlusPlus/src/external/Carve/include;../../IfcPlusPlus/src/external/Carve/src;../../IfcPlusPlus/src/external/Carve/src/include;../../IfcPlusPlus/src/external/Carve/src/common;../../IfcPlusPlus/src/external/Carve/build/src;.;.\src;..\..\IfcPlusPlus\src;..\..\IfcPlusPlus\src\ifcpp\IFC4X3\include;..\..\IfcPlusPlus\src\external;..\..\IfcPlusPlus\src\external\glm;$(OSG_DIR)\include;$(OSG_DIR)\build\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -203,7 +203,6 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <OpenMPSupport>true</OpenMPSupport>
       <BrowseInformation>true</BrowseInformation>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -231,8 +230,8 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>UNICODE;WIN32;WIN64;NDEBUG;QT_NO_DEBUG;GLM_FORCE_CTOR_INIT;GLM_FORCE_XYZW_ONLY;THRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP;IFCQUERY_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;../../IfcPlusPlus/src/external;../../IfcPlusPlus/src/external/Carve/include;../../IfcPlusPlus/src/external/Carve/src;../../IfcPlusPlus/src/external/Carve/src/include;../../IfcPlusPlus/src/external/Carve/src/common;../../IfcPlusPlus/src/external/Carve/build/src;.;.\src;..\..\IfcPlusPlus\src;..\..\IfcPlusPlus\src\ifcpp\IFC4X3\include;..\..\IfcPlusPlus\src\external;..\..\IfcPlusPlus\src\external\glm;$(OSG_DIR)\include;$(OSG_DIR)\build\include;../../IfcPlusPlus/src/external/manifold/src/utilities/include;../../IfcPlusPlus/src/external/manifold/src/utilities;../../IfcPlusPlus/src/external/manifold/src/polygon/include;../../IfcPlusPlus/src/external/manifold/src/manifold/include;../../IfcPlusPlus/src/external/manifold/src;../../IfcPlusPlus/src/external\manifold\src\collider\include;../../IfcPlusPlus/src/external/manifold/src/third_party;../../IfcPlusPlus/src/external/manifold/src/third_party/thrust;../../IfcPlusPlus/src/external/manifold/src/third_party/graphlite/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>UNICODE;WIN32;WIN64;NDEBUG;QT_NO_DEBUG;IFCQUERY_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>.\GeneratedFiles\$(ConfigurationName);.\GeneratedFiles;../../IfcPlusPlus/src/external;../../IfcPlusPlus/src/external/Carve/include;../../IfcPlusPlus/src/external/Carve/src;../../IfcPlusPlus/src/external/Carve/src/include;../../IfcPlusPlus/src/external/Carve/src/common;../../IfcPlusPlus/src/external/Carve/build/src;.;.\src;..\..\IfcPlusPlus\src;..\..\IfcPlusPlus\src\ifcpp\IFC4X3\include;..\..\IfcPlusPlus\src\external;..\..\IfcPlusPlus\src\external\glm;$(OSG_DIR)\include;$(OSG_DIR)\build\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
@@ -241,7 +240,6 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <FloatingPointExceptions>true</FloatingPointExceptions>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <OpenMPSupport>true</OpenMPSupport>
       <BrowseInformation>false</BrowseInformation>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <Optimization>MaxSpeed</Optimization>
@@ -292,6 +290,7 @@
     <ClCompile Include="src\cmd\CmdRemoveSelectedObjects.cpp" />
     <ClCompile Include="src\cmd\Command.cpp" />
     <ClCompile Include="src\cmd\CommandManager.cpp" />
+    <ClCompile Include="src\gui\EntityAttributeWidget.cpp" />
     <ClCompile Include="src\gui\IfcTreeWidget.cpp" />
     <ClCompile Include="src\gui\MainWindow.cpp" />
     <ClCompile Include="src\gui\StoreyShiftWidget.cpp" />
@@ -371,6 +370,7 @@
     </QtMoc>
     <QtMoc Include="src\gui\StoreyShiftWidget.h">
     </QtMoc>
+    <QtMoc Include="src\gui\EntityAttributeWidget.h" />
     <ClInclude Include="src\gui\ScopedLockAndBlock.h" />
     <ClInclude Include="src\IncludeGeometryHeaders.h" />
     <ClInclude Include="src\viewer\GraphicsWindowQt.h" />

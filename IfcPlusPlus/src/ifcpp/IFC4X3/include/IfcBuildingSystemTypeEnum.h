@@ -11,19 +11,16 @@
 
 namespace IFC4X3
 {
-	// TYPE IfcBuildingSystemTypeEnum = ENUMERATION OF	(EROSIONPREVENTION	,FENESTRATION	,FOUNDATION	,LOADBEARING	,OUTERSHELL	,PRESTRESSING	,REINFORCING	,SHADING	,TRANSPORT	,USERDEFINED	,NOTDEFINED);
+	// TYPE IfcBuildingSystemTypeEnum = ENUMERATION OF	(FENESTRATION	,FOUNDATION	,LOADBEARING	,OUTERSHELL	,SHADING	,TRANSPORT	,USERDEFINED	,NOTDEFINED);
 	class IFCQUERY_EXPORT IfcBuildingSystemTypeEnum : virtual public BuildingObject
 	{
 	public:
 		enum IfcBuildingSystemTypeEnumEnum
 		{
-			ENUM_EROSIONPREVENTION,
 			ENUM_FENESTRATION,
 			ENUM_FOUNDATION,
 			ENUM_LOADBEARING,
 			ENUM_OUTERSHELL,
-			ENUM_PRESTRESSING,
-			ENUM_REINFORCING,
 			ENUM_SHADING,
 			ENUM_TRANSPORT,
 			ENUM_USERDEFINED,
@@ -33,7 +30,7 @@ namespace IFC4X3
 		IfcBuildingSystemTypeEnum() = default;
 		IfcBuildingSystemTypeEnum( IfcBuildingSystemTypeEnumEnum e ) { m_enum = e; }
 		virtual uint32_t classID() const { return 3114819794; }
-		virtual void getStepParameter( std::stringstream& stream, bool is_select_type = false ) const;
+		virtual void getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const;
 		static shared_ptr<IfcBuildingSystemTypeEnum> createObjectFromSTEP( const std::string& arg, const std::map<int,shared_ptr<BuildingEntity> >& map, std::stringstream& errorStream );
 		IfcBuildingSystemTypeEnumEnum m_enum;
 	};

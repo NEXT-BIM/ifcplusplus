@@ -87,7 +87,7 @@ void writePLY(const std::string& out_file, const carve::mesh::MeshSet<3>* poly,
 
 static carve::mesh::MeshSet<3>* faceLoopsToPolyhedron(
 	const carve::csg::FaceLoopList& fl) {
-	std::vector<carve::mesh::MeshSet<3>::face_t*> faces;
+	std::vector<carve::mesh::Face<3>*> faces;
 	faces.reserve(fl.size());
 	for( carve::csg::FaceLoop* f = fl.head; f; f = f->next ) {
 		faces.push_back(
@@ -116,18 +116,18 @@ namespace {
 	 */
 	template <typename iter_t>
 	void orderVertices(iter_t beg, const iter_t end,
-		const carve::mesh::MeshSet<3>::vertex_t::vector_t& dir,
-		const carve::mesh::MeshSet<3>::vertex_t::vector_t& base,
-		std::vector<carve::mesh::MeshSet<3>::vertex_t*>& out) {
-		typedef std::vector<std::pair<double, carve::mesh::MeshSet<3>::vertex_t*> >
+		const carve::mesh::Vertex<3>::vector_t& dir,
+		const carve::mesh::Vertex<3>::vector_t& base,
+		std::vector<carve::mesh::Vertex<3>*>& out) {
+		typedef std::vector<std::pair<double, carve::mesh::Vertex<3>*> >
 			DVVector;
-		std::vector<std::pair<double, carve::mesh::MeshSet<3>::vertex_t*> >
+		std::vector<std::pair<double, carve::mesh::Vertex<3>*> >
 			ordered_vertices;
 
 		ordered_vertices.reserve(std::distance(beg, end));
 
 		for( ; beg != end; ++beg ) {
-			carve::mesh::MeshSet<3>::vertex_t* v = *beg;
+			carve::mesh::Vertex<3>* v = *beg;
 			ordered_vertices.push_back(
 				std::make_pair(carve::geom::dot(v->v - base, dir), v));
 		}
@@ -146,18 +146,18 @@ namespace {
 	template <typename iter_t>
 	void orderEdgeIntersectionVertices(
 		iter_t beg, const iter_t end,
-		const carve::mesh::MeshSet<3>::vertex_t::vector_t& dir,
-		const carve::mesh::MeshSet<3>::vertex_t::vector_t& base,
-		std::vector<carve::mesh::MeshSet<3>::vertex_t*>& out) {
+		const carve::mesh::Vertex<3>::vector_t& dir,
+		const carve::mesh::Vertex<3>::vector_t& base,
+		std::vector<carve::mesh::Vertex<3>*>& out) {
 		typedef std::vector<
-			std::pair<std::pair<double, double>, carve::mesh::MeshSet<3>::vertex_t*> >
+			std::pair<std::pair<double, double>, carve::mesh::Vertex<3>*> >
 			DVVector;
 		DVVector ordered_vertices;
 
 		ordered_vertices.reserve(std::distance(beg, end));
 
 		for( ; beg != end; ++beg ) {
-			carve::mesh::MeshSet<3>::vertex_t* v = (*beg).first;
+			carve::mesh::Vertex<3>* v = (*beg).first;
 			double ovec = 0.0;
 			for( carve::csg::detail::EdgeIntInfo::mapped_type::const_iterator j =
 				(*beg).second.begin();
@@ -190,10 +190,10 @@ namespace {
 	template <typename iter_t>
 	void selectOrderingProjection(
 		iter_t beg, const iter_t end,
-		carve::mesh::MeshSet<3>::vertex_t::vector_t& dir,
-		carve::mesh::MeshSet<3>::vertex_t::vector_t& base) {
+		carve::mesh::Vertex<3>::vector_t& dir,
+		carve::mesh::Vertex<3>::vector_t& base) {
 		double dx, dy, dz;
-		carve::mesh::MeshSet<3>::vertex_t* min_x, * min_y, * min_z, * max_x, * max_y,
+		carve::mesh::Vertex<3>* min_x, * min_y, * min_z, * max_x, * max_y,
 			* max_z;
 		if( beg == end ) {
 			return;
@@ -249,10 +249,10 @@ namespace {
 
 namespace {
 	struct dump_data {
-		carve::mesh::MeshSet<3>::vertex_t* i_pt;
+		carve::mesh::Vertex<3>* i_pt;
 		carve::csg::IObj i_src;
 		carve::csg::IObj i_tgt;
-		dump_data(carve::mesh::MeshSet<3>::vertex_t* _i_pt, carve::csg::IObj _i_src,
+		dump_data(carve::mesh::Vertex<3>* _i_pt, carve::csg::IObj _i_src,
 			carve::csg::IObj _i_tgt)
 			: i_pt(_i_pt), i_src(_i_src), i_tgt(_i_tgt) {}
 	};
@@ -295,7 +295,7 @@ namespace {
 				je = (*i).second.end();
 				j != je; ++j ) {
 				const carve::csg::IObj& i_tgt = ((*j).first);
-				carve::mesh::MeshSet<3>::vertex_t* i_pt = ((*j).second);
+				carve::mesh::Vertex<3>* i_pt = ((*j).second);
 				temp.push_back(dump_data(i_pt, i_src, i_tgt));
 			}
 		}
@@ -319,7 +319,7 @@ namespace {
 				j = (*i).second.begin(),
 				je = (*i).second.end();
 				j != je; ++j ) {
-				carve::mesh::MeshSet<3>::vertex_t* i_pt = ((*j).second);
+				carve::mesh::Vertex<3>* i_pt = ((*j).second);
 				vertices.push_back(i_pt->v);
 			}
 		}
@@ -339,7 +339,7 @@ namespace {
 	 * @param faces
 	 */
 	template <typename face_set_t>
-	inline void facesForVertex(carve::mesh::MeshSet<3>::vertex_t* v,
+	inline void facesForVertex(carve::mesh::Vertex<3>* v,
 		const carve::csg::detail::VEVecMap& ve,
 		face_set_t& faces) {
 		carve::csg::detail::VEVecMap::const_iterator vi = ve.find(v);
@@ -373,7 +373,7 @@ namespace {
 	 * @param faces
 	 */
 	template <typename face_set_t>
-	inline void facesForFace(carve::mesh::MeshSet<3>::face_t* f,
+	inline void facesForFace(carve::mesh::Face<3>* f,
 		face_set_t& faces) {
 		faces.insert(f);
 	}
@@ -408,7 +408,7 @@ namespace {
 	}
 }  // namespace
 
-bool carve::csg::CSG::Hooks::hasHook(unsigned hook_num) {
+bool carve::csg::CSG::Hooks::hasHook(unsigned int hook_num) {
 	return hooks[hook_num].size() > 0;
 }
 
@@ -448,8 +448,8 @@ void carve::csg::CSG::Hooks::edgeDivision(const meshset_t::edge_t* orig_edge,
 	}
 }
 
-void carve::csg::CSG::Hooks::registerHook(Hook* hook, unsigned hook_bits) {
-	for( unsigned i = 0; i < HOOK_MAX; ++i ) {
+void carve::csg::CSG::Hooks::registerHook(Hook* hook, unsigned int hook_bits) {
+	for( unsigned int i = 0; i < HOOK_MAX; ++i ) {
 		if( hook_bits & (1U << i) ) {
 			hooks[i].push_back(hook);
 		}
@@ -457,7 +457,7 @@ void carve::csg::CSG::Hooks::registerHook(Hook* hook, unsigned hook_bits) {
 }
 
 void carve::csg::CSG::Hooks::unregisterHook(Hook* hook) {
-	for( unsigned i = 0; i < HOOK_MAX; ++i ) {
+	for( unsigned int i = 0; i < HOOK_MAX; ++i ) {
 		hooks[i].erase(std::remove(hooks[i].begin(), hooks[i].end(), hook),
 			hooks[i].end());
 	}
@@ -465,7 +465,7 @@ void carve::csg::CSG::Hooks::unregisterHook(Hook* hook) {
 
 void carve::csg::CSG::Hooks::reset() {
 	std::set<Hook*> to_delete;
-	for( unsigned i = 0; i < HOOK_MAX; ++i ) {
+	for( unsigned int i = 0; i < HOOK_MAX; ++i ) {
 		for( std::list<Hook*>::iterator j = hooks[i].begin(); j != hooks[i].end();
 			++j ) {
 			to_delete.insert(*j);
@@ -506,7 +506,7 @@ void carve::csg::CSG::makeVertexIntersections() {
 	}
 }
 
-static carve::mesh::MeshSet<3>::vertex_t* chooseWeldPoint( const carve::csg::detail::VSet& equivalent, carve::csg::VertexPool& vertex_pool)
+static carve::mesh::Vertex<3>* chooseWeldPoint( const carve::csg::detail::VSet& equivalent, carve::csg::VertexPool& vertex_pool)
 {
 	// XXX: choose a better weld point.
 	if( !equivalent.size() ) {
@@ -523,16 +523,16 @@ static carve::mesh::MeshSet<3>::vertex_t* chooseWeldPoint( const carve::csg::det
 	return *equivalent.begin();
 }
 
-static const carve::mesh::MeshSet<3>::vertex_t* weld( const carve::csg::detail::VSet& equivalent, carve::csg::VertexIntersections& vertex_intersections, carve::csg::VertexPool& vertex_pool)
+static const carve::mesh::Vertex<3>* weld( const carve::csg::detail::VSet& equivalent, carve::csg::VertexIntersections& vertex_intersections, carve::csg::VertexPool& vertex_pool)
 {
-	carve::mesh::MeshSet<3>::vertex_t* weld_point = chooseWeldPoint(equivalent, vertex_pool);
+	carve::mesh::Vertex<3>* weld_point = chooseWeldPoint(equivalent, vertex_pool);
 
 #if defined(CARVE_DEBUG)
 	std::cerr << "weld: " << equivalent.size() << " vertices ( ";
 	for( carve::csg::detail::VSet::const_iterator i = equivalent.begin(),
 		e = equivalent.end();
 		i != e; ++i ) {
-		const carve::mesh::MeshSet<3>::vertex_t* v = (*i);
+		const carve::mesh::Vertex<3>* v = (*i);
 		std::cerr << " " << v;
 	}
 	std::cerr << ") to " << weld_point << std::endl;
@@ -548,7 +548,7 @@ static const carve::mesh::MeshSet<3>::vertex_t* weld( const carve::csg::detail::
 	for( carve::csg::detail::VSet::const_iterator i = equivalent.begin(),
 		e = equivalent.end();
 		i != e; ++i ) {
-		carve::mesh::MeshSet<3>::vertex_t* v = (*i);
+		carve::mesh::Vertex<3>* v = (*i);
 
 		if( v != weld_point ) {
 			carve::csg::VertexIntersections::iterator j =
@@ -563,99 +563,21 @@ static const carve::mesh::MeshSet<3>::vertex_t* weld( const carve::csg::detail::
 	return weld_point;
 }
 
-void carve::csg::CSG::groupIntersections() {
-#if 0  // old code, to be removed.
-	static carve::TimingName GROUP_INTERSECTONS("groupIntersections()");
+static void recordEdgeIntersectionInfo( carve::mesh::Vertex<3>* intersection, carve::mesh::MeshSet<3>::edge_t* edge,
+	const carve::csg::detail::VFSMap::mapped_type& intersected_faces, carve::csg::detail::Data& data)
+{
+	carve::mesh::Vertex<3>::vector_t edge_dir = edge->v2()->v - edge->v1()->v;
+	carve::csg::detail::EdgeIntInfo::mapped_type& eint_info = data.emap[edge][intersection];
 
-	carve::TimingBlock block(GROUP_INTERSECTONS);
-
-	std::vector<meshset_t::vertex_t*> vertices;
-	detail::VVSMap graph;
-#if defined(CARVE_DEBUG)
-	std::cerr << "groupIntersections()" << ": vertex_intersections.size()==" << vertex_intersections.size() << std::endl;
-#endif
-
-	vertices.reserve(vertex_intersections.size());
-	for( carve::csg::VertexIntersections::const_iterator
-		i = vertex_intersections.begin(),
-		e = vertex_intersections.end();
-		i != e;
-		++i )
+	for( carve::csg::detail::VFSMap::mapped_type::const_iterator i = intersected_faces.begin(); i != intersected_faces.end(); ++i )
 	{
-		vertices.push_back((*i).first);
-	}
-	carve::geom3d::AABB aabb;
-	aabb.fit(vertices.begin(), vertices.end(), carve::poly::vec_adapt_vertex_ptr());
-	Octree vertex_intersections_octree;
-	vertex_intersections_octree.setBounds(aabb);
-
-	vertex_intersections_octree.addVertices(vertices);
-
-	std::vector<meshset_t::vertex_t*> out;
-	for( size_t i = 0, l = vertices.size(); i != l; ++i ) {
-		// let's find all the vertices near this one. 
-		out.clear();
-		vertex_intersections_octree.findVerticesNearAllowDupes(vertices[i]->v, out);
-
-		for( size_t j = 0; j < out.size(); ++j ) {
-			if( vertices[i] != out[j] && carve::geom::equal(vertices[i]->v, out[j]->v) ) {
-#if defined(CARVE_DEBUG)
-				std::cerr << "EQ: " << vertices[i] << "," << out[j] << " " << vertices[i]->v << "," << out[j]->v << std::endl;
-#endif
-				graph[vertices[i]].insert(out[j]);
-				graph[out[j]].insert(vertices[i]);
-			}
-		}
-	}
-
-	detail::VSet visited, open;
-	while( graph.size() ) {
-		visited.clear();
-		open.clear();
-		detail::VVSMap::iterator i = graph.begin();
-		open.insert((*i).first);
-		while( open.size() ) {
-			detail::VSet::iterator t = open.begin();
-			const meshset_t::vertex_t* o = (*t);
-			open.erase(t);
-			i = graph.find(o);
-			CARVE_ASSERT(i != graph.end());
-			visited.insert(o);
-			for( detail::VVSMap::mapped_type::const_iterator
-				j = (*i).second.begin(),
-				je = (*i).second.end();
-				j != je;
-				++j ) {
-				if( visited.count((*j)) == 0 ) {
-					open.insert((*j));
-				}
-			}
-			graph.erase(i);
-		}
-		weld(visited, vertex_intersections, vertex_pool);
-	}
-#endif
-}
-
-static void recordEdgeIntersectionInfo(
-	carve::mesh::MeshSet<3>::vertex_t* intersection,
-	carve::mesh::MeshSet<3>::edge_t* edge,
-	const carve::csg::detail::VFSMap::mapped_type& intersected_faces,
-	carve::csg::detail::Data& data) {
-	carve::mesh::MeshSet<3>::vertex_t::vector_t edge_dir =
-		edge->v2()->v - edge->v1()->v;
-	carve::csg::detail::EdgeIntInfo::mapped_type& eint_info =
-		data.emap[edge][intersection];
-
-	for( carve::csg::detail::VFSMap::mapped_type::const_iterator i =
-		intersected_faces.begin();
-		i != intersected_faces.end(); ++i ) {
-		carve::mesh::MeshSet<3>::vertex_t::vector_t normal = (*i)->plane.N;
+		carve::mesh::Vertex<3>::vector_t normal = (*i)->plane.N;
 		eint_info.insert(std::make_pair((*i), carve::geom::dot(edge_dir, normal)));
 	}
 }
 
-void carve::csg::CSG::intersectingFacePairs(detail::Data& data) {
+void carve::csg::CSG::intersectingFacePairs(detail::Data& data)
+{
 	static carve::TimingName FUNC_NAME("CSG::intersectingFacePairs()");
 	carve::TimingBlock block(FUNC_NAME);
 
@@ -722,7 +644,7 @@ void carve::csg::CSG::_generateVertexVertexIntersections(meshset_t::vertex_t* va
 
 	double d_v1 = carve::geom::distance2(va->v, eb->v1()->v);
 
-	if( d_v1 < CARVE_EPSILON * CARVE_EPSILON )
+	if( d_v1 < m_epsilon * m_epsilon )
 	{
 		intersections.record(va, eb->v1(), va);
 	}
@@ -753,14 +675,14 @@ void carve::csg::CSG::_generateVertexEdgeIntersections(meshset_t::vertex_t* va, 
 
 	carve::geom::aabb<3> eb_aabb;
 	eb_aabb.fit(eb->v1()->v, eb->v2()->v);
-	if( eb_aabb.maxAxisSeparation(va->v) > CARVE_EPSILON ) {
+	if( eb_aabb.maxAxisSeparation(va->v) > m_epsilon ) {
 		return;
 	}
 
 	double a = cross(eb->v2()->v - eb->v1()->v, va->v - eb->v1()->v).length2();
 	double b = (eb->v2()->v - eb->v1()->v).length2();
 
-	if( a < b * CARVE_EPSILON*CARVE_EPSILON ) {
+	if( a < b * m_epsilon*m_epsilon ) {
 		// vertex-edge intersection
 		intersections.record(eb, va, va);
 		if( eb->rev ) {
@@ -799,14 +721,25 @@ void carve::csg::CSG::_generateEdgeEdgeIntersections(meshset_t::edge_t* ea, mesh
 	carve::geom::aabb<3> ea_aabb, eb_aabb;
 	ea_aabb.fit(v1->v, v2->v);
 	eb_aabb.fit(v3->v, v4->v);
-	if( ea_aabb.maxAxisSeparation(eb_aabb) > CARVE_EPSILON ) {
+	double extentLength2 = eb_aabb.extent.length2();
+	double eps2 = m_epsilon * m_epsilon*0.9;
+	if (extentLength2 < eps2)
+	{
+		return;
+	}
+	if (ea_aabb.extent.length2() < eps2)
+	{
+		return;
+	}
+	if( ea_aabb.maxAxisSeparation(eb_aabb) > m_epsilon )
+	{
 		return;
 	}
 
 	meshset_t::vertex_t::vector_t p1, p2;
 	double mu1, mu2;
 
-	switch( carve::geom3d::rayRayIntersection( carve::geom3d::Ray(v2->v - v1->v, v1->v), carve::geom3d::Ray(v4->v - v3->v, v3->v), p1, p2, mu1, mu2, CARVE_EPSILON) )
+	switch( carve::geom3d::rayRayIntersection( carve::geom3d::Ray(v2->v - v1->v, v1->v), carve::geom3d::Ray(v4->v - v3->v, v3->v), p1, p2, mu1, mu2, m_epsilon) )
 	{
 	case carve::RR_INTERSECTION: {
 		// edges intersect
@@ -840,8 +773,8 @@ void carve::csg::CSG::_generateEdgeEdgeIntersections(meshset_t::edge_t* ea, mesh
 	}
 }
 
-void carve::csg::CSG::generateEdgeEdgeIntersections(
-	meshset_t::face_t* a, const std::vector<meshset_t::face_t*>& b) {
+void carve::csg::CSG::generateEdgeEdgeIntersections( meshset_t::face_t* a, const std::vector<meshset_t::face_t*>& b)
+{
 	meshset_t::edge_t* ea, * eb;
 
 	ea = a->edge;
@@ -867,7 +800,7 @@ void carve::csg::CSG::_generateVertexFaceIntersections(meshset_t::face_t* fa, me
 
 	double d1 = carve::geom::distance(fa->plane, eb->v1()->v);
 
-	if( fabs(d1) < CARVE_EPSILON && fa->containsPoint(eb->v1()->v, CARVE_EPSILON) )
+	if( fabs(d1) < m_epsilon && fa->containsPoint(eb->v1()->v, m_epsilon) )
 	{
 		intersections.record(eb->v1(), fa, eb->v1());
 	}
@@ -895,7 +828,7 @@ void carve::csg::CSG::_generateEdgeFaceIntersections(meshset_t::face_t* fa, mesh
 	}
 
 	meshset_t::vertex_t::vector_t _p;
-	if( fa->simpleLineSegmentIntersection( carve::geom3d::LineSegment(eb->v1()->v, eb->v2()->v), _p, CARVE_EPSILON) )
+	if( fa->simpleLineSegmentIntersection( carve::geom3d::LineSegment(eb->v1()->v, eb->v2()->v), _p, m_epsilon) )
 	{
 		meshset_t::vertex_t* p = vertex_pool.get(_p);
 		intersections.record(eb, fa, p);
@@ -920,29 +853,35 @@ void carve::csg::CSG::generateEdgeFaceIntersections( meshset_t::face_t* a, const
 	}
 }
 
-void carve::csg::CSG::generateIntersectionCandidates(
-	meshset_t* a, const face_rtree_t* a_node, meshset_t* b,
-	const face_rtree_t* b_node, face_pairs_t& face_pairs, bool descend_a) {
-	if( !a_node->bbox.intersects(b_node->bbox) ) {
+void carve::csg::CSG::generateIntersectionCandidates( meshset_t* a, const face_rtree_t* a_node, meshset_t* b, const face_rtree_t* b_node, face_pairs_t& face_pairs, bool descend_a)
+{
+	// check intersection with epsilon. For example 2 adjacent boxes with coplanar faces, distance 1e-7. These boxes need to be merged in case of CSG::UNION operation
+	if( !a_node->bbox.intersects(b_node->bbox, m_epsilon) )
+	{
 		return;
 	}
 
-	if( a_node->child && (descend_a || !b_node->child) ) {
-		for( face_rtree_t* node = a_node->child; node; node = node->sibling ) {
+	if( a_node->child && (descend_a || !b_node->child) )
+	{
+		for( face_rtree_t* node = a_node->child; node; node = node->sibling )
+		{
 			generateIntersectionCandidates(a, node, b, b_node, face_pairs, false);
 		}
 	}
-	else if( b_node->child ) {
-		for( face_rtree_t* node = b_node->child; node; node = node->sibling ) {
+	else if( b_node->child )
+	{
+		for( face_rtree_t* node = b_node->child; node; node = node->sibling )
+		{
 			generateIntersectionCandidates(a, a_node, b, node, face_pairs, true);
 		}
 	}
-	else {
+	else
+	{
 		for( size_t i = 0; i < a_node->data.size(); ++i )
 		{
 			meshset_t::face_t* fa = a_node->data[i];
 			carve::geom::aabb<3> aabb_a = fa->getAABB();
-			if( aabb_a.maxAxisSeparation(b_node->bbox) > CARVE_EPSILON )
+			if( aabb_a.maxAxisSeparation(b_node->bbox) > m_epsilon )
 			{
 				continue;
 			}
@@ -951,7 +890,7 @@ void carve::csg::CSG::generateIntersectionCandidates(
 			{
 				meshset_t::face_t* fb = b_node->data[j];
 				carve::geom::aabb<3> aabb_b = fb->getAABB();
-				if( aabb_b.maxAxisSeparation(aabb_a) > CARVE_EPSILON )
+				if( aabb_b.maxAxisSeparation(aabb_a) > m_epsilon )
 				{
 					continue;
 				}
@@ -959,7 +898,7 @@ void carve::csg::CSG::generateIntersectionCandidates(
 				std::pair<double, double> a_ra = fa->rangeInDirection(fa->plane.N, fa->edge->vert->v);
 				std::pair<double, double> b_ra = fb->rangeInDirection(fa->plane.N, fa->edge->vert->v);
 
-				if( carve::rangeSeparation(a_ra, b_ra) > CARVE_EPSILON )
+				if( carve::rangeSeparation(a_ra, b_ra) > m_epsilon )
 				{
 					continue;
 				}
@@ -967,12 +906,12 @@ void carve::csg::CSG::generateIntersectionCandidates(
 				std::pair<double, double> a_rb = fa->rangeInDirection(fb->plane.N, fb->edge->vert->v);
 				std::pair<double, double> b_rb = fb->rangeInDirection(fb->plane.N, fb->edge->vert->v);
 
-				if( carve::rangeSeparation(a_rb, b_rb) > CARVE_EPSILON )
+				if( carve::rangeSeparation(a_rb, b_rb) > m_epsilon )
 				{
 					continue;
 				}
 
-				if( !facesAreCoplanar(fa, fb, CARVE_EPSILON) )
+				if( !facesAreCoplanar(fa, fb, m_epsilon) )
 				{
 					face_pairs[fa].push_back(fb);
 					face_pairs[fb].push_back(fa);
@@ -982,16 +921,13 @@ void carve::csg::CSG::generateIntersectionCandidates(
 	}
 }
 
-void carve::csg::CSG::generateIntersections(meshset_t* a,
-	const face_rtree_t* a_rtree,
-	meshset_t* b,
-	const face_rtree_t* b_rtree,
-	detail::Data& data) {
+void carve::csg::CSG::generateIntersections(meshset_t* a, const face_rtree_t* a_rtree, meshset_t* b, const face_rtree_t* b_rtree, detail::Data& data)
+{
 	face_pairs_t face_pairs;
 	generateIntersectionCandidates(a, a_rtree, b, b_rtree, face_pairs);
 
-	for( face_pairs_t::const_iterator i = face_pairs.begin();
-		i != face_pairs.end(); ++i ) {
+	for( face_pairs_t::const_iterator i = face_pairs.begin(); i != face_pairs.end(); ++i )
+	{
 		meshset_t::face_t* f = (*i).first;
 		meshset_t::edge_t* e = f->edge;
 		do {
@@ -1000,28 +936,28 @@ void carve::csg::CSG::generateIntersections(meshset_t* a,
 		} while( e != f->edge );
 	}
 
-	for( face_pairs_t::const_iterator i = face_pairs.begin();
-		i != face_pairs.end(); ++i ) {
+	for( face_pairs_t::const_iterator i = face_pairs.begin(); i != face_pairs.end(); ++i )
+	{
 		generateVertexVertexIntersections((*i).first, (*i).second);
 	}
 
-	for( face_pairs_t::const_iterator i = face_pairs.begin();
-		i != face_pairs.end(); ++i ) {
+	for( face_pairs_t::const_iterator i = face_pairs.begin(); i != face_pairs.end(); ++i )
+	{
 		generateVertexEdgeIntersections((*i).first, (*i).second);
 	}
 
-	for( face_pairs_t::const_iterator i = face_pairs.begin();
-		i != face_pairs.end(); ++i ) {
+	for( face_pairs_t::const_iterator i = face_pairs.begin(); i != face_pairs.end(); ++i )
+	{
 		generateEdgeEdgeIntersections((*i).first, (*i).second);
 	}
 
-	for( face_pairs_t::const_iterator i = face_pairs.begin();
-		i != face_pairs.end(); ++i ) {
+	for( face_pairs_t::const_iterator i = face_pairs.begin(); i != face_pairs.end(); ++i )
+	{
 		generateVertexFaceIntersections((*i).first, (*i).second);
 	}
 
-	for( face_pairs_t::const_iterator i = face_pairs.begin();
-		i != face_pairs.end(); ++i ) {
+	for( face_pairs_t::const_iterator i = face_pairs.begin(); i != face_pairs.end(); ++i )
+	{
 		generateEdgeFaceIntersections((*i).first, (*i).second);
 	}
 
@@ -1066,7 +1002,7 @@ void carve::csg::CSG::generateIntersections(meshset_t* a,
 
 carve::csg::CSG::CSG(double _CARVE_EPSILON)
 {
-	CARVE_EPSILON = _CARVE_EPSILON;
+	m_epsilon = _CARVE_EPSILON;
 }
 
 /**
@@ -1076,26 +1012,24 @@ carve::csg::CSG::CSG(double _CARVE_EPSILON)
  * @tparam[in,out] data Internal intersection data. data.emap is used to produce
  * data.divided_edges.
  */
-void carve::csg::CSG::divideIntersectedEdges(detail::Data& data) {
+void carve::csg::CSG::divideIntersectedEdges(detail::Data& data)
+{
 	static carve::TimingName FUNC_NAME("CSG::divideIntersectedEdges()");
 	carve::TimingBlock block(FUNC_NAME);
 
-	for( detail::EIntMap::const_iterator i = data.emap.begin(),
-		ei = data.emap.end();
-		i != ei; ++i ) {
+	for( detail::EIntMap::const_iterator i = data.emap.begin(), ei = data.emap.end(); i != ei; ++i )
+	{
 		meshset_t::edge_t* edge = (*i).first;
 		const detail::EIntMap::mapped_type& int_info = (*i).second;
 		std::vector<meshset_t::vertex_t*>& verts = data.divided_edges[edge];
-		orderEdgeIntersectionVertices(int_info.begin(), int_info.end(),
-			edge->v2()->v - edge->v1()->v, edge->v1()->v,
-			verts);
+		orderEdgeIntersectionVertices(int_info.begin(), int_info.end(), edge->v2()->v - edge->v1()->v, edge->v1()->v, verts);
 	}
 }
 
 carve::csg::CSG::~CSG() {}
 
-void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
-	detail::Data& data) {
+void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass, detail::Data& data)
+{
 	detail::FSet face_b_set;
 	for( detail::FVSMap::const_iterator i = data.fmap.begin(),
 		ie = data.fmap.end();
@@ -1126,12 +1060,10 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
 		for( detail::FSet::const_iterator j = face_b_set.begin(), je = face_b_set.end(); j != je; ++j )
 		{
 			meshset_t::face_t* face_b = (*j);
-			const detail::FVSMap::mapped_type& face_b_intersections =
-				(data.fmap[face_b]);
+			const detail::FVSMap::mapped_type& face_b_intersections = (data.fmap[face_b]);
 
 			std::vector<meshset_t::vertex_t*> vertices;
-			vertices.reserve(
-				std::min(face_a_intersections.size(), face_b_intersections.size()));
+			vertices.reserve( std::min(face_a_intersections.size(), face_b_intersections.size()));
 
 			// record the points of intersection between face_a and face_b
 			std::set_intersection(
@@ -1142,13 +1074,11 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
 #if defined(CARVE_DEBUG)
 			std::cerr << "face pair: " << face_a << ":" << face_b << " N(verts) "
 				<< vertices.size() << std::endl;
-			for( std::vector<meshset_t::vertex_t*>::const_iterator
-				i = vertices.begin(),
-				e = vertices.end();
-				i != e; ++i ) {
-				std::cerr << (*i) << " " << (*i)->v << " ("
-					<< carve::geom::distance(face_a->plane, (*i)->v) << ","
-					<< carve::geom::distance(face_b->plane, (*i)->v) << ")"
+			for( std::vector<meshset_t::vertex_t*>::const_iterator it = vertices.begin(), e = vertices.end(); it != e; ++i )
+			{
+				std::cerr << (*it) << " " << (*it)->v << " ("
+					<< carve::geom::distance(face_a->plane, (*it)->v) << ","
+					<< carve::geom::distance(face_b->plane, (*it)->v) << ")"
 					<< std::endl;
 				// CARVE_ASSERT(carve::geom3d::distance(face_a->plane_eqn, *(*i)) <
 				// EPSILON);
@@ -1171,13 +1101,13 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
 #if defined(CARVE_DEBUG)
 				std::cerr << "face_a->nVertices() = " << face_a->nVertices()
 					<< " face_a->containsPointInProjection(c) = "
-					<< face_a->containsPointInProjection(c) << std::endl;
+					<< face_a->containsPointInProjection(c, m_epsilon) << std::endl;
 				std::cerr << "face_b->nVertices() = " << face_b->nVertices()
 					<< " face_b->containsPointInProjection(c) = "
-					<< face_b->containsPointInProjection(c) << std::endl;
+					<< face_b->containsPointInProjection(c, m_epsilon) << std::endl;
 #endif
 
-				if( face_a->containsPointInProjection(c, CARVE_EPSILON) && face_b->containsPointInProjection(c, CARVE_EPSILON) )
+				if( face_a->containsPointInProjection(c, m_epsilon) && face_b->containsPointInProjection(c, m_epsilon) )
 				{
 #if defined(CARVE_DEBUG)
 					std::cerr << "adding edge: " << v1 << "-" << v2 << std::endl;
@@ -1204,7 +1134,7 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
 			// mesh. eventually all coplanar face regions of two polyhedra
 			// must reach a point where they are no longer coplanar (or the
 			// polyhedra are identical).
-			if( !facesAreCoplanar(face_a, face_b, CARVE_EPSILON) )
+			if( !facesAreCoplanar(face_a, face_b, m_epsilon) )
 			{
 				// order the intersection vertices (they must lie along a
 				// vector, as the faces aren't coplanar).
@@ -1213,7 +1143,8 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
 
 				// for each possible edge in the ordering, test the midpoint,
 				// and record if it's contained in face_a and face_b.
-				for( int k = 0, ke = (int)ordered.size() - 1; k < ke; ++k ) {
+				for( int k = 0, ke = (int)ordered.size() - 1; k < ke; ++k )
+				{
 					meshset_t::vertex_t* v1 = ordered[k];
 					meshset_t::vertex_t* v2 = ordered[k + 1];
 					carve::geom3d::Vector c = (v1->v + v2->v) / 2;
@@ -1221,16 +1152,16 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
 #if defined(CARVE_DEBUG)
 					std::cerr << "testing edge: " << v1 << "-" << v2 << " at " << c
 						<< std::endl;
-					std::cerr << "a: " << face_a->containsPointInProjection(c)
-						<< " b: " << face_b->containsPointInProjection(c)
+					std::cerr << "a: " << face_a->containsPointInProjection(c, m_epsilon)
+						<< " b: " << face_b->containsPointInProjection(c, m_epsilon)
 						<< std::endl;
 					std::cerr << "face_a->containsPointInProjection(c): "
-						<< face_a->containsPointInProjection(c) << std::endl;
+						<< face_a->containsPointInProjection(c, m_epsilon) << std::endl;
 					std::cerr << "face_b->containsPointInProjection(c): "
-						<< face_b->containsPointInProjection(c) << std::endl;
+						<< face_b->containsPointInProjection(c, m_epsilon) << std::endl;
 #endif
 
-					if( face_a->containsPointInProjection(c, CARVE_EPSILON) && face_b->containsPointInProjection(c, CARVE_EPSILON) )
+					if( face_a->containsPointInProjection(c, m_epsilon) && face_b->containsPointInProjection(c, m_epsilon) )
 					{
 #if defined(CARVE_DEBUG)
 						std::cerr << "adding edge: " << v1 << "-" << v2 << std::endl;
@@ -1295,28 +1226,35 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass,
  *
  * @param fll
  */
-static void checkFaceLoopIntegrity(carve::csg::FaceLoopList& fll) {
+static void checkFaceLoopIntegrity(carve::csg::FaceLoopList& fll)
+{
 	static carve::TimingName FUNC_NAME("CSG::checkFaceLoopIntegrity()");
 	carve::TimingBlock block(FUNC_NAME);
 
 	std::unordered_map<carve::csg::V2, int, carve::hash_pair> counts;
-	for( carve::csg::FaceLoop* fl = fll.head; fl; fl = fl->next ) {
-		std::vector<carve::mesh::MeshSet<3>::vertex_t*>& loop = (fl->vertices);
-		carve::mesh::MeshSet<3>::vertex_t* v1, * v2;
+	for( carve::csg::FaceLoop* fl = fll.head; fl; fl = fl->next )
+	{
+		std::vector<carve::mesh::Vertex<3>*>& loop = (fl->vertices);
+		carve::mesh::Vertex<3>* v1, * v2;
 		v1 = loop[loop.size() - 1];
-		for( unsigned i = 0; i < loop.size(); ++i ) {
+		for( unsigned int i = 0; i < loop.size(); ++i )
+		{
 			v2 = loop[i];
-			if( v1 < v2 ) {
+			if( v1 < v2 )
+			{
 				counts[std::make_pair(v1, v2)]++;
 			}
-			else {
+			else
+			{
 				counts[std::make_pair(v2, v1)]--;
 			}
 			v1 = v2;
 		}
 	}
-	for( auto& x : counts ) {
-		if( x.second ) {
+	for( auto& x : counts )
+	{
+		if( x.second )
+		{
 			std::cerr << "FACE LOOP ERROR: " << x.first.first << "-" << x.first.second
 				<< " : " << x.second << std::endl;
 		}
@@ -1336,13 +1274,9 @@ static void checkFaceLoopIntegrity(carve::csg::FaceLoopList& fll) {
  * @param b_edge_count
  * @param hooks
  */
-void carve::csg::CSG::calc(meshset_t* a, const face_rtree_t* a_rtree,
-	meshset_t* b, const face_rtree_t* b_rtree,
-	carve::csg::VertexClassification& vclass,
-	carve::csg::EdgeClassification& eclass,
-	carve::csg::FaceLoopList& a_face_loops,
-	carve::csg::FaceLoopList& b_face_loops,
-	size_t& a_edge_count, size_t& b_edge_count) {
+void carve::csg::CSG::calc(meshset_t* a, const face_rtree_t* a_rtree, meshset_t* b, const face_rtree_t* b_rtree, carve::csg::VertexClassification& vclass,
+	carve::csg::EdgeClassification& eclass, carve::csg::FaceLoopList& a_face_loops, carve::csg::FaceLoopList& b_face_loops, size_t& a_edge_count, size_t& b_edge_count)
+{
 	detail::Data data;
 
 #if defined(CARVE_DEBUG)
@@ -1416,19 +1350,17 @@ void carve::csg::CSG::calc(meshset_t* a, const face_rtree_t* a_rtree,
 	std::cerr << "classify" << std::endl;
 #endif
 	// initialize some classification information.
-	for( std::vector<meshset_t::vertex_t>::iterator i = a->vertex_storage.begin(),
-		e = a->vertex_storage.end();
-		i != e; ++i ) {
+	for( std::vector<meshset_t::vertex_t>::iterator i = a->vertex_storage.begin(), e = a->vertex_storage.end(); i != e; ++i )
+	{
 		vclass[map_vertex(data.vmap, &(*i))].cls[0] = POINT_ON;
 	}
-	for( std::vector<meshset_t::vertex_t>::iterator i = b->vertex_storage.begin(),
-		e = b->vertex_storage.end();
-		i != e; ++i ) {
+	
+	for( std::vector<meshset_t::vertex_t>::iterator i = b->vertex_storage.begin(), e = b->vertex_storage.end(); i != e; ++i )
+	{
 		vclass[map_vertex(data.vmap, &(*i))].cls[1] = POINT_ON;
 	}
-	for( VertexIntersections::const_iterator i = vertex_intersections.begin(),
-		e = vertex_intersections.end();
-		i != e; ++i ) {
+	for( VertexIntersections::const_iterator i = vertex_intersections.begin(), e = vertex_intersections.end(); i != e; ++i )
+	{
 		vclass[(*i).first] = PC2(POINT_ON, POINT_ON);
 	}
 
@@ -1453,32 +1385,29 @@ void carve::csg::CSG::calc(meshset_t* a, const face_rtree_t* a_rtree,
  * @param result_list
  * @param shared_edge_ptr
  */
-void returnSharedEdges(carve::csg::V2Set& shared_edges,
-	std::list<carve::mesh::MeshSet<3>*>& result_list,
-	carve::csg::V2Set* shared_edge_ptr) {
+void returnSharedEdges(carve::csg::V2Set& shared_edges, std::list<carve::mesh::MeshSet<3>*>& result_list, carve::csg::V2Set* shared_edge_ptr)
+{
 	// need to convert shared edges to point into result
-	typedef std::map<carve::geom3d::Vector, carve::mesh::MeshSet<3>::vertex_t*>
-		remap_type;
+	typedef std::map<carve::geom3d::Vector, carve::mesh::Vertex<3>*> remap_type;
 	remap_type remap;
-	for( std::list<carve::mesh::MeshSet<3>*>::iterator list_it =
-		result_list.begin();
-		list_it != result_list.end(); list_it++ ) {
+
+	for( std::list<carve::mesh::MeshSet<3>*>::iterator list_it = result_list.begin(); list_it != result_list.end(); list_it++ )
+	{
 		carve::mesh::MeshSet<3>* result = *list_it;
-		if( result ) {
-			for( std::vector<carve::mesh::MeshSet<3>::vertex_t>::iterator it =
-				result->vertex_storage.begin();
-				it != result->vertex_storage.end(); it++ ) {
+		if( result )
+		{
+			for( std::vector<carve::mesh::Vertex<3>>::iterator it = result->vertex_storage.begin(); it != result->vertex_storage.end(); it++ ) 
+			{
 				remap.insert(std::make_pair((*it).v, &(*it)));
 			}
 		}
 	}
-	for( carve::csg::V2Set::iterator it = shared_edges.begin();
-		it != shared_edges.end(); it++ ) {
+	for( carve::csg::V2Set::iterator it = shared_edges.begin(); it != shared_edges.end(); it++ )
+	{
 		remap_type::iterator first_it = remap.find(((*it).first)->v);
 		remap_type::iterator second_it = remap.find(((*it).second)->v);
 		CARVE_ASSERT(first_it != remap.end() && second_it != remap.end());
-		shared_edge_ptr->insert(
-			std::make_pair(first_it->second, second_it->second));
+		shared_edge_ptr->insert( std::make_pair(first_it->second, second_it->second));
 	}
 }
 
@@ -1494,9 +1423,8 @@ void returnSharedEdges(carve::csg::V2Set& shared_edges,
  *
  * @return
  */
-carve::mesh::MeshSet<3>* carve::csg::CSG::compute(
-	meshset_t* a, meshset_t* b, carve::csg::CSG::Collector& collector,
-	carve::csg::V2Set* shared_edges_ptr, CLASSIFY_TYPE classify_type) {
+carve::mesh::MeshSet<3>* carve::csg::CSG::compute( meshset_t* a, meshset_t* b, carve::csg::CSG::Collector& collector, carve::csg::CSG::OP op, carve::csg::V2Set* shared_edges_ptr, CLASSIFY_TYPE classify_type)
+{
 	static carve::TimingName FUNC_NAME("CSG::compute");
 	carve::TimingBlock block(FUNC_NAME);
 
@@ -1512,16 +1440,13 @@ carve::mesh::MeshSet<3>* carve::csg::CSG::compute(
 	size_t a_edge_count;
 	size_t b_edge_count;
 
-	std::unique_ptr<face_rtree_t> a_rtree(
-		face_rtree_t::construct_STR(a->faceBegin(), a->faceEnd(), 4, 4));
-	std::unique_ptr<face_rtree_t> b_rtree(
-		face_rtree_t::construct_STR(b->faceBegin(), b->faceEnd(), 4, 4));
+	std::unique_ptr<face_rtree_t> a_rtree( face_rtree_t::construct_STR(a->faceBegin(), a->faceEnd(), 4, 4));
+	std::unique_ptr<face_rtree_t> b_rtree( face_rtree_t::construct_STR(b->faceBegin(), b->faceEnd(), 4, 4));
 
 	{
 		static carve::TimingName FUNC_NAME("CSG::compute - calc()");
 		carve::TimingBlock block(FUNC_NAME);
-		calc(a, a_rtree.get(), b, b_rtree.get(), vclass, eclass, a_face_loops,
-			b_face_loops, a_edge_count, b_edge_count);
+		calc(a, a_rtree.get(), b, b_rtree.get(), vclass, eclass, a_face_loops, b_face_loops, a_edge_count, b_edge_count);
 	}
 
 	detail::LoopEdges a_edge_map;
@@ -1593,25 +1518,74 @@ carve::mesh::MeshSet<3>* carve::csg::CSG::compute(
 	}
 #endif
 
-	switch( classify_type ) {
+	switch( classify_type )
+	{
 	case CLASSIFY_EDGE:
-		classifyFaceGroupsEdge(shared_edges, vclass, a, a_rtree.get(),
-			a_loops_grouped, a_edge_map, b, b_rtree.get(),
-			b_loops_grouped, b_edge_map, collector);
+		classifyFaceGroupsEdge(shared_edges, vclass, a, a_rtree.get(), a_loops_grouped, a_edge_map, b, b_rtree.get(), b_loops_grouped, b_edge_map, collector);
 		break;
 	case CLASSIFY_NORMAL:
-		classifyFaceGroups(shared_edges, vclass, a, a_rtree.get(),
-			a_loops_grouped, a_edge_map, b, b_rtree.get(),
-			b_loops_grouped, b_edge_map, collector);
+		classifyFaceGroups(shared_edges, vclass, a, a_rtree.get(), a_loops_grouped, a_edge_map, b, b_rtree.get(), b_loops_grouped, b_edge_map, collector);
 		break;
 	}
 
 	meshset_t* result = collector.done(hooks);
-	if( result != nullptr && shared_edges_ptr != nullptr ) {
+	if( result != nullptr && shared_edges_ptr != nullptr )
+	{
 		std::list<meshset_t*> result_list;
 		result_list.push_back(result);
 		returnSharedEdges(shared_edges, result_list, shared_edges_ptr);
 	}
+
+	std::vector<bool> mesh_is_inside;
+		
+	//if (op == A_MINUS_B)
+	{
+		for (auto& faceLoopGroup : a_loops_grouped)
+		{
+			if (faceLoopGroup.src)
+			{
+				for (auto mesh : faceLoopGroup.src->meshes)
+				{
+					if (mesh)
+					{
+						mesh_is_inside.push_back(mesh->is_inner_mesh);
+					}
+				}
+				break;
+			}
+		}
+
+		for (auto& faceLoopGroup : b_loops_grouped)
+		{
+			if (faceLoopGroup.src)
+			{
+				for (auto mesh : faceLoopGroup.src->meshes)
+				{
+					if (mesh)
+					{
+						mesh_is_inside.push_back(mesh->is_inner_mesh);
+					}
+				}
+			}
+		}
+	}
+		
+	if (result != nullptr)
+	{
+		for (size_t ii = 0; ii < result->meshes.size(); ++ii )
+		{
+			auto mesh = result->meshes[ii];
+			if (mesh)
+			{
+				if (mesh_is_inside.size() > ii)
+				{
+					bool result_mesh_inside = mesh_is_inside[ii];
+					mesh->is_inner_mesh = result_mesh_inside;
+				}
+			}
+		}
+	}
+
 	return result;
 }
 
@@ -1627,15 +1601,30 @@ carve::mesh::MeshSet<3>* carve::csg::CSG::compute(
  *
  * @return
  */
-carve::mesh::MeshSet<3>* carve::csg::CSG::compute(
-	meshset_t* a, meshset_t* b, carve::csg::CSG::OP op,
-	carve::csg::V2Set* shared_edges, CLASSIFY_TYPE classify_type) {
+carve::mesh::MeshSet<3>* carve::csg::CSG::compute( meshset_t* a, meshset_t* b, carve::csg::CSG::OP op, carve::csg::V2Set* shared_edges, CLASSIFY_TYPE classify_type) 
+{
 	Collector* coll = makeCollector(op, a, b);
 	if( !coll ) {
 		return nullptr;
 	}
 
-	meshset_t* result = compute(a, b, *coll, shared_edges, classify_type);
+	meshset_t* result = nullptr;
+	try
+	{
+		result = compute(a, b, *coll, op, shared_edges, classify_type);
+	}
+	catch (carve::exception& ce)
+	{
+#ifdef _DEBUG
+		std::cout << ce.str() << std::endl;
+#endif
+	}
+	catch (std::exception& e)
+	{
+#ifdef _DEBUG
+		std::cout << e.what() << std::endl;
+#endif
+	}
 
 	delete coll;
 
@@ -1654,10 +1643,8 @@ carve::mesh::MeshSet<3>* carve::csg::CSG::compute(
  *
  * @return
  */
-bool carve::csg::CSG::sliceAndClassify(
-	meshset_t* closed, meshset_t* open,
-	std::list<std::pair<FaceClass, meshset_t*> >& result,
-	carve::csg::V2Set* shared_edges_ptr) {
+bool carve::csg::CSG::sliceAndClassify( meshset_t* closed, meshset_t* open, std::list<std::pair<FaceClass, meshset_t*> >& result, carve::csg::V2Set* shared_edges_ptr)
+{
 	if( !closed->isClosed() ) {
 		return false;
 	}
@@ -1673,13 +1660,10 @@ bool carve::csg::CSG::sliceAndClassify(
 	size_t a_edge_count;
 	size_t b_edge_count;
 
-	std::unique_ptr<face_rtree_t> closed_rtree(face_rtree_t::construct_STR(
-		closed->faceBegin(), closed->faceEnd(), 4, 4));
-	std::unique_ptr<face_rtree_t> open_rtree(
-		face_rtree_t::construct_STR(open->faceBegin(), open->faceEnd(), 4, 4));
+	std::unique_ptr<face_rtree_t> closed_rtree(face_rtree_t::construct_STR( closed->faceBegin(), closed->faceEnd(), 4, 4));
+	std::unique_ptr<face_rtree_t> open_rtree( face_rtree_t::construct_STR(open->faceBegin(), open->faceEnd(), 4, 4));
 
-	calc(closed, closed_rtree.get(), open, open_rtree.get(), vclass, eclass,
-		a_face_loops, b_face_loops, a_edge_count, b_edge_count);
+	calc(closed, closed_rtree.get(), open, open_rtree.get(), vclass, eclass, a_face_loops, b_face_loops, a_edge_count, b_edge_count);
 
 	detail::LoopEdges a_edge_map;
 	detail::LoopEdges b_edge_map;
@@ -1691,19 +1675,16 @@ bool carve::csg::CSG::sliceAndClassify(
 
 	findSharedEdges(a_edge_map, b_edge_map, shared_edges);
 
-	groupFaceLoops(closed, a_face_loops, a_edge_map, shared_edges,
-		a_loops_grouped);
+	groupFaceLoops(closed, a_face_loops, a_edge_map, shared_edges, a_loops_grouped);
 	groupFaceLoops(open, b_face_loops, b_edge_map, shared_edges, b_loops_grouped);
 
-	halfClassifyFaceGroups(shared_edges, vclass, closed, closed_rtree.get(),
-		a_loops_grouped, a_edge_map, open, open_rtree.get(),
-		b_loops_grouped, b_edge_map, result);
+	halfClassifyFaceGroups(shared_edges, vclass, closed, closed_rtree.get(), a_loops_grouped, a_edge_map, open, open_rtree.get(), b_loops_grouped, b_edge_map, result);
 
-	if( shared_edges_ptr != nullptr ) {
+	if( shared_edges_ptr != nullptr )
+	{
 		std::list<meshset_t*> result_list;
-		for( std::list<std::pair<FaceClass, meshset_t*> >::iterator it =
-			result.begin();
-			it != result.end(); it++ ) {
+		for( std::list<std::pair<FaceClass, meshset_t*> >::iterator it = result.begin(); it != result.end(); it++ )
+		{
 			result_list.push_back(it->second);
 		}
 		returnSharedEdges(shared_edges, result_list, shared_edges_ptr);
@@ -1721,10 +1702,8 @@ bool carve::csg::CSG::sliceAndClassify(
  * @param hooks
  * @param shared_edges_ptr
  */
-void carve::csg::CSG::slice(meshset_t* a, meshset_t* b,
-	std::list<meshset_t*>& a_sliced,
-	std::list<meshset_t*>& b_sliced,
-	carve::csg::V2Set* shared_edges_ptr) {
+void carve::csg::CSG::slice(meshset_t* a, meshset_t* b, std::list<meshset_t*>& a_sliced, std::list<meshset_t*>& b_sliced, carve::csg::V2Set* shared_edges_ptr)
+{
 	carve::csg::VertexClassification vclass;
 	carve::csg::EdgeClassification eclass;
 
@@ -1737,13 +1716,10 @@ void carve::csg::CSG::slice(meshset_t* a, meshset_t* b,
 	size_t a_edge_count;
 	size_t b_edge_count;
 
-	std::unique_ptr<face_rtree_t> a_rtree(
-		face_rtree_t::construct_STR(a->faceBegin(), a->faceEnd(), 4, 4));
-	std::unique_ptr<face_rtree_t> b_rtree(
-		face_rtree_t::construct_STR(b->faceBegin(), b->faceEnd(), 4, 4));
+	std::unique_ptr<face_rtree_t> a_rtree( face_rtree_t::construct_STR(a->faceBegin(), a->faceEnd(), 4, 4));
+	std::unique_ptr<face_rtree_t> b_rtree( face_rtree_t::construct_STR(b->faceBegin(), b->faceEnd(), 4, 4));
 
-	calc(a, a_rtree.get(), b, b_rtree.get(), vclass, eclass, a_face_loops,
-		b_face_loops, a_edge_count, b_edge_count);
+	calc(a, a_rtree.get(), b, b_rtree.get(), vclass, eclass, a_face_loops, b_face_loops, a_edge_count, b_edge_count);
 
 	detail::LoopEdges a_edge_map;
 	detail::LoopEdges b_edge_map;
@@ -1758,9 +1734,8 @@ void carve::csg::CSG::slice(meshset_t* a, meshset_t* b,
 	groupFaceLoops(a, a_face_loops, a_edge_map, shared_edges, a_loops_grouped);
 	groupFaceLoops(b, b_face_loops, b_edge_map, shared_edges, b_loops_grouped);
 
-	for( carve::csg::FLGroupList::iterator i = a_loops_grouped.begin(),
-		e = a_loops_grouped.end();
-		i != e; ++i ) {
+	for( carve::csg::FLGroupList::iterator i = a_loops_grouped.begin(), e = a_loops_grouped.end(); i != e; ++i )
+	{
 		Collector* all = makeCollector(ALL, a, b);
 		all->collect(&*i, hooks);
 		a_sliced.push_back(all->done(hooks));
@@ -1768,16 +1743,17 @@ void carve::csg::CSG::slice(meshset_t* a, meshset_t* b,
 		delete all;
 	}
 
-	for( carve::csg::FLGroupList::iterator i = b_loops_grouped.begin(),
-		e = b_loops_grouped.end();
-		i != e; ++i ) {
+	for( carve::csg::FLGroupList::iterator i = b_loops_grouped.begin(), e = b_loops_grouped.end(); i != e; ++i )
+	{
 		Collector* all = makeCollector(ALL, a, b);
 		all->collect(&*i, hooks);
 		b_sliced.push_back(all->done(hooks));
 
 		delete all;
 	}
-	if( shared_edges_ptr != nullptr ) {
+	
+	if( shared_edges_ptr != nullptr )
+	{
 		std::list<meshset_t*> result_list;
 		result_list.insert(result_list.end(), a_sliced.begin(), a_sliced.end());
 		result_list.insert(result_list.end(), b_sliced.begin(), b_sliced.end());

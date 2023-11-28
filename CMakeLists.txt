@@ -38,34 +38,40 @@ ELSE(NOT WIN32)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 ENDIF(NOT WIN32)
 
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-
 set(IFCPP_CONFIG_DIR "share/IFCPP/cmake")
 ADD_SUBDIRECTORY (IfcPlusPlus)
 
 # Install configuration file
-INCLUDE(CMakePackageConfigHelpers)
-set(config_file_input  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/IFCPPConfig.cmake.in")
-set(config_file_output "${CMAKE_CURRENT_BINARY_DIR}/cmake/IFCPPConfig.cmake")
+#INCLUDE(CMakePackageConfigHelpers)
+#set(config_file_input  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/IFCPPConfig.cmake.in")
+#set(config_file_output "${CMAKE_CURRENT_BINARY_DIR}/cmake/IFCPPConfig.cmake")
 
-CONFIGURE_PACKAGE_CONFIG_FILE(
-  ${config_file_input}
-  ${config_file_output}
-  INSTALL_DESTINATION ${IFCPP_CONFIG_DIR})
+#CONFIGURE_PACKAGE_CONFIG_FILE(
+#  ${config_file_input}
+#  ${config_file_output}
+# INSTALL_DESTINATION ${IFCPP_CONFIG_DIR})
 
-INSTALL(
-  FILES ${config_file_output}
-  DESTINATION ${IFCPP_CONFIG_DIR})
+#INSTALL(
+#  FILES ${config_file_output}
+# DESTINATION ${IFCPP_CONFIG_DIR})
+
+#install(
+#    DIRECTORY   src/ifcpp
+#    DESTINATION include
+#    FILES_MATCHING PATTERN "*.h"
+#)
+
+#install(
+#    TARGETS IfcPlusPlus
+    #EXPORT  IfcPlusPlus
+#    RUNTIME DESTINATION bin
+#    LIBRARY DESTINATION bin
+#    ARCHIVE DESTINATION bin
+#)
   
 IF(BUILD_CONSOLE_APPLICATION)
   ADD_SUBDIRECTORY (examples/CreateIfcWallAndWriteFile)
   ADD_SUBDIRECTORY (examples/LoadFileExample)
-  ADD_SUBDIRECTORY (examples/LoadFileWithGeometryExample)
 ENDIF()
 IF(BUILD_VIEWER_APPLICATION)
   ADD_SUBDIRECTORY (examples/SimpleViewerExampleQt)

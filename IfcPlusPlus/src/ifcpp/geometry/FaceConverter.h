@@ -80,7 +80,6 @@ public:
 	void convertIfcSurface( const shared_ptr<IfcSurface>& surface, shared_ptr<ItemShapeData>& item_data, shared_ptr<SurfaceProxy>& surface_proxy, double plane_span_default = -1)
 	{
 		//ENTITY IfcSurface ABSTRACT SUPERTYPE OF(ONEOF(IfcBoundedSurface, IfcElementarySurface, IfcSweptSurface))
-
 		shared_ptr<IfcBoundedSurface> bounded_surface = dynamic_pointer_cast<IfcBoundedSurface>( surface );
 		if( bounded_surface )
 		{
@@ -105,7 +104,7 @@ public:
 			{
 				// ENTITY IfcCurveBoundedPlane SUBTYPE OF IfcBoundedSurface;
 				shared_ptr<IfcCurveBoundedPlane> curve_bounded_plane = dynamic_pointer_cast<IfcCurveBoundedPlane>( bounded_surface );
-				shared_ptr<TransformData> curve_bounded_plane_matrix;
+				shared_ptr<TransformData> curve_bounded_plane_transform;
 				shared_ptr<IfcPlane>& basis_surface = curve_bounded_plane->m_BasisSurface;
 				if( basis_surface )
 				{
@@ -113,7 +112,7 @@ public:
 
 					if( basis_surface_placement )
 					{
-						m_curve_converter->getPlacementConverter()->convertIfcAxis2Placement3D( basis_surface_placement, curve_bounded_plane_matrix );
+						m_curve_converter->getPlacementConverter()->convertIfcAxis2Placement3D( basis_surface_placement, curve_bounded_plane_transform);
 					}
 				}
 
@@ -139,13 +138,13 @@ public:
 					m_curve_converter->convertIfcCurve( inner_boundary, inner_boundary_loop, segment_start_points, true );
 				}
 
-				double CARVE_EPSILON = m_geom_settings->getEpsilonCoplanarDistance();
-				PolyInputCache3D poly_cache(CARVE_EPSILON);
+				double eps = m_geom_settings->getEpsilonMergePoints();
+				PolyInputCache3D poly_cache(eps);
 				bool mergeAlignedEdges = true;
 				GeomProcessingParams params( m_geom_settings, outer_boundary.get(),  this );
-				MeshUtils::createTriangulated3DFace( face_loops, poly_cache, params );
-				item_data->addOpenPolyhedron( poly_cache.m_poly_data, CARVE_EPSILON );
-				item_data->applyTransformToItem( curve_bounded_plane_matrix );
+				createTriangulated3DFace( face_loops, poly_cache, params );
+				item_data->addOpenPolyhedron( poly_cache.m_poly_data, params );
+				item_data->applyTransformToItem(curve_bounded_plane_transform->m_matrix, eps, false );
 			}
 			else if( dynamic_pointer_cast<IfcCurveBoundedSurface>( bounded_surface ) )
 			{
@@ -155,10 +154,6 @@ public:
 				{
 					convertIfcSurface( basis_surface, item_data, surface_proxy );
 				}
-
-
-				//std::vector<shared_ptr<IfcBoundaryCurve> >& vec_boundaries = curve_bounded_surface->m_Boundaries;
-				//bool implicit_outer = curve_bounded_surface->m_ImplicitOuter;
 
 				// TODO: implement
 #ifdef _DEBUG
@@ -278,38 +273,40 @@ public:
 			// ENTITY IfcSweptSurface	ABSTRACT SUPERTYPE OF(ONEOF(IfcSurfaceOfLinearExtrusion, IfcSurfaceOfRevolution))
 			shared_ptr<IfcProfileDef>& swept_surface_profile = swept_surface->m_SweptCurve;
 			shared_ptr<ProfileConverter> profileCon = m_profile_cache->getProfileConverter(swept_surface_profile);
-			const std::vector<std::vector<vec2> >& swept_profile = profileCon->getCoordinates();
-
-			shared_ptr<IfcAxis2Placement3D>& swept_surface_placement = swept_surface->m_Position;
-
-			shared_ptr<TransformData> swept_surface_transform;
-			if( swept_surface_placement )
+			if (profileCon)
 			{
-				m_curve_converter->getPlacementConverter()->convertIfcAxis2Placement3D( swept_surface_placement,  swept_surface_transform );
-			}
+				const std::vector<std::vector<vec2> >& swept_profile = profileCon->getCoordinates();
 
-			shared_ptr<IfcSurfaceOfLinearExtrusion> linear_extrusion = dynamic_pointer_cast<IfcSurfaceOfLinearExtrusion>( swept_surface );
-			if( linear_extrusion )
-			{
-				shared_ptr<IfcDirection>& ifc_extrusion_direction = linear_extrusion->m_ExtrudedDirection;
-				if( ifc_extrusion_direction )
+				shared_ptr<IfcAxis2Placement3D>& swept_surface_placement = swept_surface->m_Position;
+
+				shared_ptr<TransformData> swept_surface_transform;
+				if (swept_surface_placement)
 				{
-					vec3 extrusion_direction = carve::geom::VECTOR(ifc_extrusion_direction->m_DirectionRatios[0]->m_value, ifc_extrusion_direction->m_DirectionRatios[1]->m_value, ifc_extrusion_direction->m_DirectionRatios[2]->m_value);
+					m_curve_converter->getPlacementConverter()->convertIfcAxis2Placement3D(swept_surface_placement, swept_surface_transform);
+				}
 
-					double factor = 1.0;
-					if( linear_extrusion->m_Depth )
+				shared_ptr<IfcSurfaceOfLinearExtrusion> linear_extrusion = dynamic_pointer_cast<IfcSurfaceOfLinearExtrusion>(swept_surface);
+				if (linear_extrusion)
+				{
+					shared_ptr<IfcDirection>& ifc_extrusion_direction = linear_extrusion->m_ExtrudedDirection;
+					if (ifc_extrusion_direction)
 					{
-						factor = linear_extrusion->m_Depth->m_value;
-						extrusion_direction *= factor;
+						vec3 extrusion_direction = carve::geom::VECTOR(ifc_extrusion_direction->m_DirectionRatios[0]->m_value, ifc_extrusion_direction->m_DirectionRatios[1]->m_value, ifc_extrusion_direction->m_DirectionRatios[2]->m_value);
+
+						double factor = 1.0;
+						if (linear_extrusion->m_Depth)
+						{
+							factor = linear_extrusion->m_Depth->m_value;
+							extrusion_direction *= factor;
+						}
+
+						GeomProcessingParams params(m_geom_settings, surface.get(), this);
+						m_sweeper->extrude(swept_profile, extrusion_direction, item_data, params);
 					}
 
-					GeomProcessingParams params(m_geom_settings, surface.get(), this);
-					m_sweeper->extrude(swept_profile, extrusion_direction, item_data, params);
+					return;
 				}
-				
-				return;
 			}
-
 			shared_ptr<IfcSurfaceOfRevolution> suface_of_revolution = dynamic_pointer_cast<IfcSurfaceOfRevolution>( swept_surface );
 			if( suface_of_revolution )
 			{
@@ -331,8 +328,8 @@ public:
 		{
 			return;
 		}
-		double CARVE_EPSILON = m_geom_settings->getEpsilonCoplanarDistance();
-		PolyInputCache3D poly_cache(CARVE_EPSILON);
+		double eps = m_geom_settings->getEpsilonMergePoints();
+		PolyInputCache3D poly_cache(eps);
 		GeomProcessingParams params( m_geom_settings, nullptr,  this );
 		
 		for( size_t ii = 0; ii < vec_faces.size(); ++ii )
@@ -343,23 +340,9 @@ public:
 				continue;
 			}
 
-#ifdef _DEBUG
-			shared_ptr<IfcAdvancedFace> advancedFace = dynamic_pointer_cast<IfcAdvancedFace>( ifc_face );
-			if( advancedFace )
-			{
-				int tag = advancedFace->m_tag;
-				if( tag == 1261069 )
-				{
-					std::cout << "IfcAdvancedFace, tag=" << tag << std::endl;
-				}
-			}
-#endif
-
 			const std::vector<shared_ptr<IfcFaceBound> >& vec_bounds = ifc_face->m_Bounds;
 			std::vector<std::vector<vec3> > face_loops;
 			params.ifc_entity = ifc_face.get();
-			bool mergeAlignedEdges = true;
-			size_t maxNumIntersectionPoints = 200;
 
 			for( auto it_bounds = vec_bounds.begin(); it_bounds != vec_bounds.end(); ++it_bounds )
 			{
@@ -414,38 +397,36 @@ public:
 			for( size_t iiLoop = 0; iiLoop < face_loops.size(); ++iiLoop )
 			{
 				std::vector<vec3>& loop = face_loops[iiLoop];
-				GeomUtils::unClosePolygon(loop);
+				GeomUtils::unClosePolygon(loop, params.epsMergePoints);
 			}
 			
-			MeshUtils::createTriangulated3DFace( face_loops, poly_cache, params );
+			createTriangulated3DFace( face_loops, poly_cache, params );
 
 #ifdef _DEBUG
-			if( ifc_face->m_tag == 1261069 )
+			if( ifc_face->m_tag == 1067431)
 			{
-				//params.debugDump = true;
+				params.debugDump = true;
 			}
 
-			//if( ifc_face->m_tag == 2529 )
-			//{
-			//	params.debugDump = true;
-			//}
+			shared_ptr<IfcAdvancedFace> advancedFace = dynamic_pointer_cast<IfcAdvancedFace>( ifc_face );
 
-			if( params.debugDump )
+			if( params.debugDump || advancedFace )
 			{
 				glm::vec4 color(0.5, 0.6, 0.7, 1.0);
 				for( size_t iiLoop = 0; iiLoop < face_loops.size(); ++iiLoop )
 				{
 					std::vector<vec3>& loop = face_loops[iiLoop];
-					GeomDebugDump::dumpPolyline(loop, color, false);
+					//GeomDebugDump::dumpPolyline(loop, color, 0, false);
 				}
 
 				//if( ii == 34 )
 				{
-					PolyInputCache3D poly_cache_dump(CARVE_EPSILON);
-					MeshUtils::createTriangulated3DFace(face_loops, poly_cache_dump, params);
-					std::map<std::string, std::string> mesh_input_options;
-					shared_ptr<carve::mesh::MeshSet<3> > meshset(poly_cache_dump.m_poly_data->createMesh(mesh_input_options, CARVE_EPSILON));
-					GeomDebugDump::dumpMeshset(meshset, color, false);
+					//PolyInputCache3D poly_cache_dump(eps);
+					//createTriangulated3DFace(face_loops, poly_cache_dump, params);
+					//std::map<std::string, std::string> mesh_input_options;
+					//shared_ptr<carve::mesh::MeshSet<3> > meshset(poly_cache_dump.m_poly_data->createMesh(mesh_input_options, eps));
+					//bool drawNormals = false;
+					//GeomDebugDump::dumpMeshset(meshset, color, drawNormals, false, false);
 				}
 				GeomDebugDump::moveOffset(0.0001);
 			}
@@ -455,15 +436,708 @@ public:
 		// IfcFaceList can be a closed or open shell
 		if( st == SHELL_TYPE_UNKONWN )
 		{
-			item_data->addOpenOrClosedPolyhedron( poly_cache.m_poly_data, CARVE_EPSILON );
+			item_data->addOpenOrClosedPolyhedron( poly_cache.m_poly_data, params );
 		}
 		else if( st == OPEN_SHELL )
 		{
-			item_data->addOpenPolyhedron( poly_cache.m_poly_data, CARVE_EPSILON );
+			item_data->addOpenPolyhedron( poly_cache.m_poly_data, params );
 		}
 		else if( st == CLOSED_SHELL )
 		{
-			item_data->addClosedPolyhedron(poly_cache.m_poly_data, params);
+			item_data->addClosedPolyhedron(poly_cache.m_poly_data, params, m_geom_settings);
 		}
+	}
+
+	static void addTriangleCheckDegenerate(int idxA, int idxB, int idxC, PolyInputCache3D& meshOut, double eps)
+	{
+		if (idxA == idxB || idxA == idxC || idxB == idxC)
+		{
+#ifdef _DEBUG
+			std::cout << "skipping degenerate triangle: " << idxA << "/" << idxB << "/" << idxC << std::endl;
+#endif
+			return;
+		}
+
+		const carve::geom::vector<3>& pointA = meshOut.m_poly_data->getVertex(idxA);
+		const carve::geom::vector<3>& pointB = meshOut.m_poly_data->getVertex(idxB);
+		const carve::geom::vector<3>& pointC = meshOut.m_poly_data->getVertex(idxC);
+		double lengthAB = (pointB - pointA).length2();
+		if (lengthAB < eps * eps * 10)
+		{
+#ifdef _DEBUG
+			std::cout << "skipping degenerate triangle: " << idxA << "/" << idxB << "/" << idxC << std::endl;
+#endif
+			return;
+		}
+
+		double lengthAC = (pointC - pointA).length2();
+		if (lengthAC < eps * eps * 10)
+		{
+#ifdef _DEBUG
+			std::cout << "skipping degenerate triangle: " << idxA << "/" << idxB << "/" << idxC << std::endl;
+#endif
+			return;
+		}
+
+		double lengthBC = (pointC - pointB).length2();
+		if (lengthBC < eps * eps * 10)
+		{
+#ifdef _DEBUG
+			std::cout << "skipping degenerate triangle: " << idxA << "/" << idxB << "/" << idxC << std::endl;
+#endif
+			return;
+		}
+
+		meshOut.m_poly_data->addFace(idxA, idxB, idxC);
+	}
+
+	static void addFaceCheckIndexes(int idxA, int idxB, int idxC, int idxD, PolyInputCache3D& meshOut, double eps)
+	{
+		std::set<int> setIndices = { idxA, idxB, idxC, idxD };
+
+		if (setIndices.size() == 3)
+		{
+			auto it = setIndices.begin();
+			idxA = *it;
+			++it;
+			idxB = *it;
+			++it;
+			idxC = *it;
+			meshOut.m_poly_data->addFace(idxA, idxB, idxC);
+			return;
+		}
+
+		addTriangleCheckDegenerate(idxA, idxB, idxC, meshOut, eps);
+		addTriangleCheckDegenerate(idxA, idxC, idxD, meshOut, eps);
+	}
+
+	static void addFaceCheckIndexes(const vec3& v0, const vec3& v1, const vec3& v2, PolyInputCache3D& meshOut, double eps)
+	{
+		int idxA = meshOut.addPoint(v0);
+		int idxB = meshOut.addPoint(v1);
+		int idxC = meshOut.addPoint(v2);
+		addTriangleCheckDegenerate(idxA, idxB, idxC, meshOut, eps);
+	}
+
+	static void addFaceCheckIndexes(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& v3, PolyInputCache3D& meshOut, double eps)
+	{
+		int idxA = meshOut.addPoint(v0);
+		int idxB = meshOut.addPoint(v1);
+		int idxC = meshOut.addPoint(v2);
+		int idxD = meshOut.addPoint(v3);
+
+		addTriangleCheckDegenerate(idxA, idxB, idxC, meshOut, eps);
+		addTriangleCheckDegenerate(idxA, idxC, idxD, meshOut, eps);
+	}
+
+	static void triangulateCurvedPolygon(std::vector<vec3>& loopPoints3D, PolyInputCache3D& meshOut, const GeomProcessingParams& params, double maxAllowedDistanceFromPlane)
+	{
+		// find corner with smallest angle
+		if (loopPoints3D.size() > params.generalSettings->m_maxNumFaceEdges)
+		{
+			return;
+		}
+
+		size_t numPoints = loopPoints3D.size();
+		double eps = params.epsMergePoints;
+		double smallestAngle = DBL_MAX;
+		size_t smallestAngleIdx = numPoints + 1;
+		for (size_t i = 0; i < numPoints; ++i)
+		{
+			size_t idxB = (i + 1) % numPoints;
+			const vec3& pointA = loopPoints3D[i];
+			const vec3& pointB = loopPoints3D[idxB];
+			const vec3& pointC = loopPoints3D[(i + 2) % numPoints];
+			const vec3 BA = (pointA - pointB).normalized();
+			const vec3 BC = (pointC - pointB).normalized();
+			double dotProduct = dot(BA, BC);
+			double openingAngle = std::acos(dotProduct);
+
+			if (openingAngle < smallestAngle)
+			{
+				smallestAngle = openingAngle;
+				smallestAngleIdx = idxB;
+			}
+		}
+
+		if (smallestAngleIdx < numPoints)
+		{
+			// collect in-plane triangles from smallest angle corner
+
+			std::vector<size_t> currentFlatPolygon;
+			int indexBack = smallestAngleIdx - 1;
+			int indexForward = smallestAngleIdx + 1;
+
+			if (indexBack < 0)
+			{
+				indexBack += numPoints;
+			}
+			if (indexBack >= numPoints)
+			{
+				indexBack -= numPoints;
+			}
+			if (indexForward < 0)
+			{
+				indexForward += numPoints;
+			}
+			if (indexForward >= numPoints)
+			{
+				indexForward -= numPoints;
+			}
+
+			currentFlatPolygon.push_back(indexBack);
+			currentFlatPolygon.push_back(smallestAngleIdx);
+			currentFlatPolygon.push_back(indexForward);
+
+			const vec3& pointA = loopPoints3D[currentFlatPolygon[0]];
+			const vec3& pointB = loopPoints3D[currentFlatPolygon[1]];
+			const vec3& pointC = loopPoints3D[currentFlatPolygon[2]];
+			vec3 normal = GeomUtils::computeNormal(pointA, pointB, pointC, eps);
+			vec3 centroid = GeomUtils::computePolygonCentroid({ pointA, pointB, pointC });
+
+			if (normal.length() > 0.5)
+			{
+				// go forward in loop until the point is not in the plane any more
+				for (size_t i = 0; i < numPoints; ++i)
+				{
+					int indexA = (smallestAngleIdx + i + 2)%numPoints;
+					if (indexA < 0)
+					{
+						indexA += numPoints;
+					}
+					const vec3& pointA = loopPoints3D[indexA];
+
+					double distance = GeomUtils::distancePointPlane(pointA, normal, centroid);
+					if (std::abs(distance) > maxAllowedDistanceFromPlane)
+					{
+						break;
+					}
+
+					currentFlatPolygon.push_back(indexA);
+				}
+
+				// go backward in loop until the point is not in the plane any more
+				for (size_t i = 0; i < numPoints; ++i)
+				{
+					int indexA = smallestAngleIdx - i - 2;
+					if (indexA < 0)
+					{
+						indexA += numPoints;
+					}
+					if (indexA >= numPoints )
+					{
+						indexA -= numPoints;
+					}
+					if (indexA < 0)
+					{
+						continue;
+					}
+					if (indexA >= loopPoints3D.size())
+					{
+						continue;
+					}
+					const vec3& pointA = loopPoints3D[indexA];
+
+					double distance = GeomUtils::distancePointPlane(pointA, normal, centroid);
+					if (std::abs(distance) > maxAllowedDistanceFromPlane)
+					{
+						break;
+					}
+
+					currentFlatPolygon.insert(currentFlatPolygon.begin(), indexA);
+				}
+			}
+			else
+			{
+				// degenerated triangle
+				int wait = 0;
+			}
+
+			std::vector<vec3> currentFlatPolygonPoints;
+			for (size_t i = 0; i < currentFlatPolygon.size(); ++i)
+			{
+				size_t index = currentFlatPolygon[i];
+				currentFlatPolygonPoints.push_back(loopPoints3D[index]);
+			}
+			std::vector<std::vector<vec3> > vectorFlatPolygon = { currentFlatPolygonPoints };
+			createTriangulated3DFace(vectorFlatPolygon, meshOut, params);
+
+			currentFlatPolygon.pop_back();
+			currentFlatPolygon.erase(currentFlatPolygon.begin());
+
+			std::set<size_t> currentFlatPolygonIndexes;
+			for (size_t i = 0; i < currentFlatPolygon.size(); ++i)
+			{
+				size_t index = currentFlatPolygon[i];
+				currentFlatPolygonIndexes.insert(index);
+			}
+
+#ifdef _DEBUG
+			if (params.debugDump)
+			{
+				glm::vec4 color(0.5, 0.5, 0.3, 0.5);
+				GeomDebugDump::dumpPolyline(loopPoints3D, color, 2.0, false, false);
+			}
+#endif
+
+			for (auto itIndex = currentFlatPolygonIndexes.rbegin(); itIndex != currentFlatPolygonIndexes.rend(); ++itIndex)
+			{
+				size_t index = *itIndex;
+				auto it = loopPoints3D.begin();
+				if (index < loopPoints3D.size())
+				{
+#ifdef _DEBUG
+					if (currentFlatPolygonIndexes.size() > 1 && params.debugDump)
+					{
+						glm::vec4 color2(0.5, 0.3, 0.9, 0.3);
+						//GeomDebugDump::dumpPolyline(loopPoints3D, color2, 3.0, true);
+					}
+#endif
+
+					std::advance(it, index);
+					loopPoints3D.erase(it);
+
+#ifdef _DEBUG
+					if (currentFlatPolygonIndexes.size() > 1 && params.debugDump)
+					{
+						glm::vec4 color2(0.5, 0., 0.3, 0.3);
+						//GeomDebugDump::dumpPolyline(loopPoints3D, color2, 3.0, true);
+					}
+#endif
+				}
+			}
+
+#ifdef _DEBUG
+			if (params.debugDump)
+			{
+				PolyInputCache3D polyDebug(eps);
+				createTriangulated3DFace(vectorFlatPolygon, polyDebug, params);
+				shared_ptr<carve::mesh::MeshSet<3> > meshset(polyDebug.m_poly_data->createMesh(carve::input::opts(), eps));
+				bool drawNormals = false;
+				bool drawOpenEdges = false;
+				glm::vec4 color1(0.5, 0.5, 0.5, 1.);
+				GeomDebugDump::dumpMeshset(meshset, color1, drawNormals, drawOpenEdges, true);
+				GeomDebugDump::moveOffset(0.1);
+			}
+#endif
+		}
+	}
+
+	///\brief method createTriangulated3DFace: Creates a triangulated face
+	///\param[in] inputBounds3D: Curves as face boundaries. The first input curve is the outer boundary, succeeding curves are inner boundaries
+	///\param[in] ifc_entity: Ifc entity that the geometry belongs to, just for error messages. Pass a nullptr if no entity at hand.
+	///\param[out] meshOut: Result mesh
+	static void createTriangulated3DFace(const std::vector<std::vector<vec3> >& inputBounds3D, PolyInputCache3D& meshOut, const GeomProcessingParams& params)
+	{
+		double eps = params.epsMergePoints;
+		if (inputBounds3D.size() == 1)
+		{
+			const std::vector<vec3>& outerLoop = inputBounds3D[0];
+			if (outerLoop.size() < 3)
+			{
+				return;
+			}
+			
+			if (outerLoop.size() == 3)
+			{
+				const vec3& v0 = outerLoop[0];
+				const vec3& v1 = outerLoop[1];
+				const vec3& v2 = outerLoop[2];
+				addFaceCheckIndexes(v0, v1, v2, meshOut, eps);
+				return;
+			}
+
+			if (outerLoop.size() == 4)
+			{
+				const vec3& v0 = outerLoop[0];
+				const vec3& v1 = outerLoop[1];
+				const vec3& v2 = outerLoop[2];
+				const vec3& v3 = outerLoop[3];
+				addFaceCheckIndexes(v0, v1, v2, v3, meshOut, eps);
+				return;
+			}
+		}
+
+#ifdef _DEBUG
+		PolyInputCache3D polyDebug(eps);
+#endif
+
+		std::vector<std::vector<std::array<double, 2> > > polygons2d;
+		std::vector<std::vector<vec3> > polygons3d;
+		std::vector<double> polygon3DArea;
+		bool face_loop_reversed = false;
+		bool warning_small_loop_detected = false;
+		bool errorOccured = false;
+		GeomUtils::ProjectionPlane face_plane = GeomUtils::ProjectionPlane::UNDEFINED;
+		vec3 normal = carve::geom::VECTOR(0, 0, 1);
+		vec3 normalOuterBound = carve::geom::VECTOR(0, 0, 1);
+
+		for (auto it_bounds = inputBounds3D.begin(); it_bounds != inputBounds3D.end(); ++it_bounds)
+		{
+			std::vector<vec3> currentPointLoop = *it_bounds;
+
+			if (currentPointLoop.size() < 3)
+			{
+				if (it_bounds == inputBounds3D.begin())
+				{
+					break;
+				}
+				else
+				{
+					continue;
+				}
+			}
+
+			if (params.mergeAlignedEdges)
+			{
+				//GeomUtils::simplifyPolygon(loopPoints3Dinput, params.epsMergePoints, params.epsMergeAlignedEdgesAngle);
+			}
+			GeomUtils::unClosePolygon(currentPointLoop, eps);
+			normal = GeomUtils::computePolygonNormal(currentPointLoop, eps);
+			vec3 centroid = GeomUtils::computePolygonCentroid(currentPointLoop);
+
+			carve::geom::aabb<3> bbox;
+			GeomUtils::polygonBbox(currentPointLoop, bbox );
+			
+			if (it_bounds == inputBounds3D.begin())
+			{
+				normalOuterBound = normal;
+
+				// figure out on which plane to project the 3D points
+				double nx = std::abs(normal.x);
+				double ny = std::abs(normal.y);
+				double nz = std::abs(normal.z);
+				if (nz > nx && nz >= ny)
+				{
+					face_plane = GeomUtils::XY_PLANE;
+				}
+				else if (nx >= ny && nx >= nz)
+				{
+					face_plane = GeomUtils::YZ_PLANE;
+				}
+				else if (ny > nx && ny >= nz)
+				{
+					face_plane = GeomUtils::XZ_PLANE;
+				}
+				else
+				{
+					std::stringstream err;
+					err << "unable to project to plane: nx" << nx << " ny " << ny << " nz " << nz << std::endl;
+					if (params.callbackFunc)
+					{
+						params.callbackFunc->messageCallback(err.str().c_str(), StatusCallback::MESSAGE_TYPE_WARNING, __FUNC__, params.ifc_entity);
+					}
+					continue;
+				}
+			}
+
+			// project face into 2d plane
+			std::vector<std::array<double, 2> > path_loop_2d;
+			std::vector<vec3> path_loop_3d;
+			double curvature = 0;
+			double maxExtent = std::max(bbox.extent.x, std::max(bbox.extent.y, bbox.extent.z));
+			double maxAllowedDistanceFromPlane = params.epsMergePoints * 500 * maxExtent;
+			const size_t numPoints = currentPointLoop.size();
+			for (size_t i = 0; i < numPoints; ++i)
+			{
+				const vec3& point = currentPointLoop[i];
+				path_loop_3d.push_back(point);
+				if (face_plane == GeomUtils::XY_PLANE)
+				{
+					path_loop_2d.push_back({ point.x, point.y });
+				}
+				else if (face_plane == GeomUtils::YZ_PLANE)
+				{
+					path_loop_2d.push_back({ point.y, point.z });
+				}
+				else if (face_plane == GeomUtils::XZ_PLANE)
+				{
+					path_loop_2d.push_back({ point.x, point.z });
+				}
+
+				double distance = GeomUtils::distancePointPlane(point, normal, centroid);
+				curvature += std::abs(distance) / maxExtent*0.001;
+			}
+
+			if( curvature > eps*1000 )
+			{
+				GeomProcessingParams paramsDebug(params);
+#ifdef _DEBUG
+				GeomDebugDump::moveOffset(0.6);
+				glm::vec4 color2(0.5, 0.3, 0.9, 0.3);
+				for (auto it_bounds = inputBounds3D.begin(); it_bounds != inputBounds3D.end(); ++it_bounds)
+				{
+					std::vector<vec3> currentPointLoop = *it_bounds;
+					GeomDebugDump::dumpPolyline(currentPointLoop, color2, 3.0, false, false);
+					color2.g += 0.4f;
+					color2.b -= 0.4f;
+				}
+				GeomDebugDump::moveOffset(0.3);
+				paramsDebug.debugDump = true;
+#endif
+				std::vector<vec3> loopPoints3DinputCopy;
+				std::copy(currentPointLoop.begin(), currentPointLoop.end(), std::back_inserter(loopPoints3DinputCopy));
+				size_t numPoints = currentPointLoop.size();
+				for (size_t jj = 0; jj < numPoints; ++jj)
+				{
+					triangulateCurvedPolygon(loopPoints3DinputCopy, meshOut, paramsDebug, maxAllowedDistanceFromPlane);
+					if (loopPoints3DinputCopy.size() < 3)
+					{
+						break;
+					}
+				}
+				
+#ifdef _DEBUG
+				{
+					GeomProcessingParams paramsDebug(params);
+					paramsDebug.debugDump = false;
+					PolyInputCache3D polyDebug(eps);
+					std::vector<vec3> loopPoints3DinputCopy;
+					std::copy(currentPointLoop.begin(), currentPointLoop.end(), std::back_inserter(loopPoints3DinputCopy));
+					size_t numPoints = currentPointLoop.size();
+					for (size_t jj = 0; jj < numPoints; ++jj)
+					{
+						triangulateCurvedPolygon(loopPoints3DinputCopy, polyDebug, paramsDebug, maxAllowedDistanceFromPlane);
+						if (loopPoints3DinputCopy.size() < 3)
+						{
+							break;
+						}
+					}
+
+					GeomDebugDump::moveOffset(0.3);
+					glm::vec4 color(0.5, 0.8, 0.5, 0.3);
+					shared_ptr<carve::mesh::MeshSet<3> > meshset(polyDebug.m_poly_data->createMesh(carve::input::opts(), eps));
+					GeomDebugDump::dumpMeshset(meshset, color, false, false, true);
+					GeomDebugDump::moveOffset(0.3);
+				}
+#endif
+				return;
+			}
+
+			if (path_loop_2d.size() < 3)
+			{
+				//std::cout << __FUNC__ << ": #" << face_id <<  "=IfcFace: path_loop.size() < 3" << std::endl;
+				continue;
+			}
+
+			double loop_area = std::abs(GeomUtils::signedArea(path_loop_2d));
+			double min_loop_area = params.minFaceArea;
+			if (loop_area < min_loop_area)
+			{
+				warning_small_loop_detected = true;
+				continue;
+			}
+
+			if (currentPointLoop.size() == 4 && inputBounds3D.size() == 1)
+			{
+				if (GeomUtils::isQuadConvex(path_loop_2d[0], path_loop_2d[1], path_loop_2d[2], path_loop_2d[3]))
+				{
+					// add 2 triangles for quad
+					vec3 v0 = currentPointLoop[0];
+					vec3 v1 = currentPointLoop[1];
+					vec3 v2 = currentPointLoop[2];
+					vec3 v3 = currentPointLoop[3];
+					uint32_t idx0 = meshOut.addPoint(v0);
+					uint32_t idx1 = meshOut.addPoint(v1);
+					uint32_t idx2 = meshOut.addPoint(v2);
+					uint32_t idx3 = meshOut.addPoint(v3);
+
+#ifdef _DEBUG
+					uint32_t idx0_dbg = polyDebug.addPoint(v0);
+					uint32_t idx1_dbg = polyDebug.addPoint(v1);
+					uint32_t idx2_dbg = polyDebug.addPoint(v2);
+					uint32_t idx3_dbg = polyDebug.addPoint(v3);
+#endif
+
+					vec3 normalTriangle0 = GeomUtils::computePolygonNormal({ v0, v1, v2 }, eps);
+					vec3 normalTriangle1 = GeomUtils::computePolygonNormal({ v2, v3, v0 }, eps);
+
+					if (dot(normalTriangle0, normalOuterBound) > 0)
+					{
+						// normalTriangle0 and normalOuterBound should point in the same direction" << std::endl;
+						meshOut.m_poly_data->addFace(idx0, idx1, idx2);
+#ifdef _DEBUG
+						polyDebug.m_poly_data->addFace(idx0_dbg, idx1_dbg, idx2_dbg);
+#endif
+					}
+					else
+					{
+						// normalTriangle0 and normalOuterBound should point in the same direction" << std::endl;
+						meshOut.m_poly_data->addFace(idx0, idx2, idx1);
+#ifdef _DEBUG
+						polyDebug.m_poly_data->addFace(idx0_dbg, idx2_dbg, idx1_dbg);
+#endif
+					}
+
+					if (dot(normalTriangle1, normalOuterBound) > 0)
+					{
+						//std::cout << "normalTriangle1 and normalOuterBound should point in the same direction" << std::endl;
+						meshOut.m_poly_data->addFace(idx2, idx3, idx0);
+#ifdef _DEBUG
+						polyDebug.m_poly_data->addFace(idx2_dbg, idx3_dbg, idx0_dbg);
+#endif
+					}
+					else
+					{
+						meshOut.m_poly_data->addFace(idx2, idx0, idx3);
+#ifdef _DEBUG
+						polyDebug.m_poly_data->addFace(idx2_dbg, idx0_dbg, idx3_dbg);
+#endif
+					}
+
+					return;
+				}
+			}
+
+			// outer loop (biggest area) needs to come first
+			bool insertPositionFound = false;
+			for (size_t iiArea = 0; iiArea < polygon3DArea.size(); ++iiArea)
+			{
+				double existingLoopArea = polygon3DArea[iiArea];
+
+				// existingArea[i]  < loop_area < existingArea[i+1]
+				if (loop_area > existingLoopArea)
+				{
+					polygons2d.insert(polygons2d.begin() + iiArea, path_loop_2d);
+					polygons3d.insert(polygons3d.begin() + iiArea, path_loop_3d);
+					polygon3DArea.insert(polygon3DArea.begin() + iiArea, loop_area);
+					insertPositionFound = true;
+					break;
+				}
+			}
+
+			if (!insertPositionFound)
+			{
+				polygons2d.push_back(path_loop_2d);
+				polygons3d.push_back(path_loop_3d);
+				polygon3DArea.push_back(loop_area);
+			}
+		}
+
+#ifdef _DEBUG
+		// check descending order
+		if (polygon3DArea.size() > 0)
+		{
+			double previousLoopArea = polygon3DArea[0];
+			if (polygon3DArea.size() > 1)
+			{
+				for (size_t iiArea = 1; iiArea < polygon3DArea.size(); ++iiArea)
+				{
+					double loopArea = polygon3DArea[iiArea];
+					if (loopArea > previousLoopArea)
+					{
+						std::cout << "polygon3DArea not descending" << std::endl;
+					}
+				}
+			}
+		}
+#endif
+		if (polygons3d.size() > 0)
+		{
+			std::vector<vec3>& loopOuterBound = polygons3d[0];
+			normalOuterBound = GeomUtils::computePolygonNormal(loopOuterBound, eps);
+		}
+
+		// check winding order in 2D
+		std::vector<std::array<double, 2> > polygons2dFlatVector;
+		for (size_t ii = 0; ii < polygons2d.size(); ++ii)
+		{
+			std::vector<std::array<double, 2> >& loop2D = polygons2d[ii];
+			std::vector<vec3>& loop3D = polygons3d[ii];
+
+			glm::dvec3 normal_2d = GeomUtils::computePolygon2DNormal(loop2D, eps);
+			if (ii == 0)
+			{
+				if (normal_2d.z < 0)
+				{
+					std::reverse(loop2D.begin(), loop2D.end());
+					std::reverse(loop3D.begin(), loop3D.end());
+					face_loop_reversed = true;
+				}
+			}
+			else
+			{
+				if (normal_2d.z > 0)
+				{
+					std::reverse(loop2D.begin(), loop2D.end());
+					std::reverse(loop3D.begin(), loop3D.end());
+				}
+			}
+		}
+
+		if (warning_small_loop_detected)
+		{
+			std::stringstream err;
+			err << "std::abs( signed_area ) < 1.e-10";
+			if (params.callbackFunc)
+			{
+				params.callbackFunc->messageCallback(err.str().c_str(), StatusCallback::MESSAGE_TYPE_MINOR_WARNING, __FUNC__, params.ifc_entity);
+			}
+		}
+
+		if (polygons2d.size() > 0)
+		{
+			std::vector<uint32_t> triangulated = mapbox::earcut<uint32_t>(polygons2d);
+
+			std::vector<vec3> polygons3dFlatVector;
+			GeomUtils::polygons2flatVec(polygons3d, polygons3dFlatVector);
+
+			for (int ii = 0; ii < triangulated.size(); ii += 3)
+			{
+				size_t idxA = triangulated[ii + 0];
+				size_t idxB = triangulated[ii + 1];
+				size_t idxC = triangulated[ii + 2];
+
+				const vec3& pointA = polygons3dFlatVector[idxA];
+				const vec3& pointB = polygons3dFlatVector[idxB];
+				const vec3& pointC = polygons3dFlatVector[idxC];
+
+				idxA = meshOut.addPoint(pointA);
+				idxB = meshOut.addPoint(pointB);
+				idxC = meshOut.addPoint(pointC);
+
+#ifdef _DEBUG
+				size_t idxA_dbg = polyDebug.addPoint(pointA);
+				size_t idxB_dbg = polyDebug.addPoint(pointB);
+				size_t idxC_dbg = polyDebug.addPoint(pointC);
+#endif
+
+				vec3 triangleNormal = GeomUtils::computePolygonNormal({ pointA, pointB, pointC }, eps);
+				if (dot(triangleNormal, normalOuterBound) >= 0)
+				{
+
+					meshOut.m_poly_data->addFace(idxA, idxB, idxC);
+#ifdef _DEBUG
+					polyDebug.m_poly_data->addFace(idxA_dbg, idxB_dbg, idxC_dbg);
+#endif
+				}
+				else
+				{
+					meshOut.m_poly_data->addFace(idxA, idxC, idxB);
+#ifdef _DEBUG
+					polyDebug.m_poly_data->addFace(idxA_dbg, idxC_dbg, idxB_dbg);
+#endif
+				}
+			}
+#ifdef _DEBUG
+			if (errorOccured /*|| ifc_entity->m_tag == 64*/)
+			{
+				glm::vec4 color(0, 1, 1, 1);
+				GeomDebugDump::dumpPolyline(polygons2d, color, true, false);
+				//shared_ptr<carve::mesh::MeshSet<3> > meshset(meshOut.m_poly_data->createMesh(carve::input::opts()));
+				//GeomDebugDump::dumpMeshset(meshset, color, true, true);
+			}
+#endif
+		}
+
+#ifdef _DEBUG
+		if (errorOccured && params.debugDump)
+		{
+			glm::vec4 color(0, 1, 1, 1);
+			shared_ptr<carve::mesh::MeshSet<3> > meshset(polyDebug.m_poly_data->createMesh(carve::input::opts(), eps));
+			bool drawNormals = true;
+			GeomDebugDump::dumpMeshset(meshset, color, drawNormals, true);
+		}
+#endif
 	}
 };

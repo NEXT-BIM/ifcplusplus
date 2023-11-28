@@ -25,13 +25,9 @@ ENDIF()
 FIND_PACKAGE(Qt5Core REQUIRED)
 FIND_PACKAGE(Qt5Widgets REQUIRED)
 FIND_PACKAGE(Qt5OpenGL REQUIRED)
-ADD_DEFINITIONS(${Qt5Widgets_DEFINITIONS})
-ADD_DEFINITIONS(-DGLM_FORCE_CTOR_INIT)
-ADD_DEFINITIONS(-DGLM_FORCE_XYZW_ONLY)
 ADD_DEFINITIONS(-DUNICODE)
 ADD_DEFINITIONS(-D_UNICODE)
 ADD_DEFINITIONS(-DIFCQUERY_STATIC_LIB)
-ADD_DEFINITIONS(-DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CPP)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -48,6 +44,7 @@ SET(IFCPPVIEWER_SOURCE_FILES
     src/cmd/CmdRemoveSelectedObjects.cpp
     src/cmd/Command.cpp
     src/cmd/CommandManager.cpp
+	src/gui/EntityAttributeWidget.cpp
     src/gui/IfcTreeWidget.cpp
     src/gui/MainWindow.cpp
     src/gui/TabReadWrite.cpp
@@ -61,6 +58,7 @@ SET(IFCPPVIEWER_SOURCE_FILES
 
 SET(IFCPPVIEWER_MOC_FILES
     src/IfcPlusPlusSystem.h
+	src/gui/EntityAttributeWidget.h
     src/gui/IfcTreeWidget.h
     src/gui/MainWindow.h
     src/gui/TabReadWrite.h
@@ -136,15 +134,6 @@ TARGET_INCLUDE_DIRECTORIES(SimpleViewerExampleQt
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/Carve/src/common
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/Carve/build/src
 	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/glm
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/utilities/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/utilities
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/polygon/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/manifold/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/collider/include
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/third_party
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/third_party/thrust
-	${IFCPP_SOURCE_DIR}/IfcPlusPlus/src/external/manifold/src/third_party/graphlite/include
 	
     ${OPENTHREADS_INCLUDE_DIR}
     ${OSG_INCLUDE_DIR}

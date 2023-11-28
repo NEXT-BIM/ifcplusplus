@@ -11,7 +11,7 @@
 
 namespace IFC4X3
 {
-	// TYPE IfcReferentTypeEnum = ENUMERATION OF	(BOUNDARY	,INTERSECTION	,KILOPOINT	,LANDMARK	,MILEPOINT	,POSITION	,REFERENCEMARKER	,STATION	,USERDEFINED	,NOTDEFINED);
+	// TYPE IfcReferentTypeEnum = ENUMERATION OF	(BOUNDARY	,INTERSECTION	,KILOPOINT	,LANDMARK	,MILEPOINT	,POSITION	,REFERENCEMARKER	,STATION	,SUPERELEVATIONEVENT	,WIDTHEVENT	,USERDEFINED	,NOTDEFINED);
 	class IFCQUERY_EXPORT IfcReferentTypeEnum : virtual public BuildingObject
 	{
 	public:
@@ -25,6 +25,8 @@ namespace IFC4X3
 			ENUM_POSITION,
 			ENUM_REFERENCEMARKER,
 			ENUM_STATION,
+			ENUM_SUPERELEVATIONEVENT,
+			ENUM_WIDTHEVENT,
 			ENUM_USERDEFINED,
 			ENUM_NOTDEFINED
 		};
@@ -32,7 +34,7 @@ namespace IFC4X3
 		IfcReferentTypeEnum() = default;
 		IfcReferentTypeEnum( IfcReferentTypeEnumEnum e ) { m_enum = e; }
 		virtual uint32_t classID() const { return 1718859833; }
-		virtual void getStepParameter( std::stringstream& stream, bool is_select_type = false ) const;
+		virtual void getStepParameter( std::stringstream& stream, bool is_select_type, size_t precision ) const;
 		static shared_ptr<IfcReferentTypeEnum> createObjectFromSTEP( const std::string& arg, const std::map<int,shared_ptr<BuildingEntity> >& map, std::stringstream& errorStream );
 		IfcReferentTypeEnumEnum m_enum;
 	};

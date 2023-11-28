@@ -80,22 +80,22 @@ struct aabb {
 
   double maxAxisSeparation(const aabb<ndim>& other) const;
 
-  bool intersects(const aabb<ndim>& other) const;
-  bool intersects(const sphere<ndim>& s) const;
-  bool intersects(const plane<ndim>& plane) const;
-  bool intersects(const ray<ndim>& ray) const;
-  bool intersects(tri<ndim> tri) const;
-  bool intersects(const linesegment<ndim>& ls) const;
+  bool intersects(const aabb<ndim>& other, double eps) const;
+  bool intersects(const sphere<ndim>& s, double eps) const;
+  bool intersects(const plane<ndim>& plane, double eps) const;
+  bool intersects(const ray<ndim>& ray, double eps) const;
+  bool intersects(tri<ndim> tri, double eps) const;
+  bool intersects(const linesegment<ndim>& ls, double eps) const;
 
   std::pair<double, double> rangeInDirection( const carve::geom::vector<ndim>& v) const;
 
-  vector_t min() const;
-  vector_t mid() const;
-  vector_t max() const;
+  vector_t minPoint() const;  // renamed from min() to minPoint() because it can create compiler problems in projects where min is defined as a macro
+  vector_t midPoint() const;
+  vector_t maxPoint() const;
 
-  double min(size_t dim) const;
-  double mid(size_t dim) const;
-  double max(size_t dim) const;
+  double minCoordinateInDimension(size_t dim) const;
+  double midCoordinateInDimension(size_t dim) const;
+  double maxDimension(size_t dim) const;
 
   double volume() const;
 

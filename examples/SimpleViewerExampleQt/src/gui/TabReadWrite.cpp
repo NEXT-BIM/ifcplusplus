@@ -137,9 +137,7 @@ void TabReadWrite::messageTarget( void* ptr, shared_ptr<StatusCallback::Message>
 	TabReadWrite* myself = (TabReadWrite*)ptr;
 	if( myself )
 	{
-#ifdef ENABLE_OPENMP
-		ScopedLock lock( myself->m_mutex_messages );
-#endif
+		std::lock_guard<std::mutex> lock(myself->m_mutex_messages);
 		std::string reporting_function_str( m->m_reporting_function );
 		std::wstringstream strs_report;
 		if( reporting_function_str.size() > 0 )
@@ -150,7 +148,11 @@ void TabReadWrite::messageTarget( void* ptr, shared_ptr<StatusCallback::Message>
 
 		if( m->m_entity )
 		{
-			strs_report << ", IFC entity: #" << m->m_entity->m_tag << "=" << EntityFactory::getStringForClassID(m->m_entity->classID());
+			BuildingEntity* ent = dynamic_cast<BuildingEntity*>(m->m_entity);
+			if( ent )
+			{
+				strs_report << ", IFC entity: #" << ent->m_tag << "=" << EntityFactory::getStringForClassID(m->m_entity->classID());
+			}
 		}
 		std::wstring message_str = strs_report.str().c_str();
 
@@ -218,7 +220,7 @@ void TabReadWrite::slotRecentFilesIndexChanged(int idx)
 void TabReadWrite::loadIfcFile( QString& path_in )
 {
 	// redirect message callbacks
-	m_system->getGeometryConverter()->setMessageCallBack( this, &TabReadWrite::messageTarget );
+	m_system->getGeometryConverter()->setMessageCallBack(std::bind(&TabReadWrite::messageTarget, this, std::placeholders::_1));
 	
 
 	txtOut( QString( "loading file: " ) + path_in );
@@ -293,30 +295,17 @@ void TabReadWrite::loadIfcFile( QString& path_in )
 
 		// load file to IFC model
 		shared_ptr<ReaderSTEP> step_reader(new ReaderSTEP());
-		step_reader->setMessageCallBack(this, &TabReadWrite::messageTarget);
+		step_reader->setMessageCallBack(std::bind(&TabReadWrite::messageTarget, this, std::placeholders::_1));
 		step_reader->loadModelFromFile(path_str, geometry_converter->getBuildingModel());
 
 		// convert IFC geometric representations into Carve geometry
+		geometry_converter->setCsgEps(1.5e-08 * geometry_converter->getBuildingModel()->getUnitConverter()->getLengthInMeterFactor());
 		geometry_converter->convertGeometry();
 
 		// convert Carve geometry to OSG
 		shared_ptr<ConverterOSG> converter_osg(new ConverterOSG(geometry_converter->getGeomSettings()));
 		converter_osg->setMessageTarget(geometry_converter.get());
 		converter_osg->convertToOSG(geometry_converter->getShapeInputData(), model_switch);
-
-		// in case there are IFC entities that are not in the spatial structure
-		const std::map<std::string, shared_ptr<BuildingObject> >& objects_outside_spatial_structure = geometry_converter->getObjectsOutsideSpatialStructure();
-		if (objects_outside_spatial_structure.size() > 0 && false)
-		{
-			osg::ref_ptr<osg::Switch> sw_objects_outside_spatial_structure = new osg::Switch();
-			sw_objects_outside_spatial_structure->setName("IfcProduct objects outside spatial structure");
-
-			converter_osg->addNodes(objects_outside_spatial_structure, sw_objects_outside_spatial_structure);
-			if (sw_objects_outside_spatial_structure->getNumChildren() > 0)
-			{
-				model_switch->addChild(sw_objects_outside_spatial_structure);
-			}
-		}
 
 		if (model_switch)
 		{
@@ -491,7 +480,8 @@ void TabReadWrite::slotWriteFileClicked()
 
 		shared_ptr<GeometryConverter> geom_converter = m_system->getGeometryConverter();
 		shared_ptr<BuildingModel>& model = geom_converter->getBuildingModel();
-		model->initFileHeader(path_std);
+		std::string applicationName = "IfcPlusPlus";
+		model->initFileHeader(path_std, applicationName);
 		std::stringstream stream;
 		shared_ptr<WriterSTEP> writer_step(new WriterSTEP());
 		writer_step->writeModelToStream(stream, model);

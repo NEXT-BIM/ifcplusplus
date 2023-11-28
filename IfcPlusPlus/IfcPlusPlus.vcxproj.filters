@@ -126,9 +126,6 @@
     <ClInclude Include="src\ifcpp\model\BuildingObject.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\ifcpp\model\OpenMPIncludes.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="src\ifcpp\model\BasicTypes.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -153,7 +150,19 @@
     <ClInclude Include="src\ifcpp\reader\AbstractReader.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="src\external\XUnzip.h">
+    <ClInclude Include="src\ifcpp\geometry\MeshSimplifier.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ifcpp\geometry\MeshOps.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ifcpp\geometry\MeshNormalizer.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ifcpp\IFC4X3\EntityFactory.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ifcpp\IFC4X3\TypeFactory.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
@@ -179,9 +188,6 @@
     <ClCompile Include="src\ifcpp\writer\WriterUtil.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="src\external\XUnzip.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="src\ifcpp\model\BuildingGuid.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -189,51 +195,6 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="src\ifcpp\IFC4X3\TypeFactory.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\boolean3.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\boolean_result.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\collider\src\collider.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\constructors.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\csg_tree.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\edge_op.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\face_op.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\impl.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\manifold.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\polygon\src\polygon.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\properties.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\smoothing.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\sort.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\third_party\graphlite\src\connected_components.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\manifold\src\utilities\src\detect_cuda.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="src\external\Carve\src\common\geometry.cpp">
@@ -321,6 +282,12 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="src\external\Carve\src\lib\triangulator.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ifcpp\geometry\MeshOps.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ifcpp\geometry\GeometryInputData.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
