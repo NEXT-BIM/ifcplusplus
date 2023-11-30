@@ -869,8 +869,8 @@ public:
 				{
 					std::vector<vec3> currentPointLoop = *it_bounds;
 					GeomDebugDump::dumpPolyline(currentPointLoop, color2, 3.0, false, false);
-					color2.g += 0.4f;
-					color2.b -= 0.4f;
+					color2.y += 0.4f;
+					color2.z -= 0.4f;
 				}
 				GeomDebugDump::moveOffset(0.3);
 				paramsDebug.debugDump = true;

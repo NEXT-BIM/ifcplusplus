@@ -740,13 +740,14 @@ public:
 		}
 
 		startAngle = trimAngle1;
+
 		if (senseAgreement)
 		{
 			openingAngle = trimAngle2 - trimAngle1;
 			if (trimAngle1 > trimAngle2)
 			{
 				// circle passes 0 angle
-				if (trimAngle1 > 0 && trimAngle2 > 0 || trimAngle1 < 0 && trimAngle2 < 0)
+				if (trimAngle1 >= 0 && trimAngle2 >= 0 || trimAngle1 <= 0 && trimAngle2 <= 0)
 				{
 					openingAngle = trimAngle2 - trimAngle1 + 2.0 * M_PI;
 				}
@@ -757,7 +758,7 @@ public:
 			openingAngle = trimAngle2 - trimAngle1;
 			if (trimAngle1 < trimAngle2)
 			{
-				if (trimAngle1 > 0 && trimAngle2 > 0 || trimAngle1 < 0 && trimAngle2 < 0)
+				if (trimAngle1 >= 0 && trimAngle2 >= 0 || trimAngle1 <= 0 && trimAngle2 <= 0)
 				{
 					// circle passes 0 angle
 					openingAngle = trimAngle2 - trimAngle1 - 2.0 * M_PI;
