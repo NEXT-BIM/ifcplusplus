@@ -138,9 +138,11 @@ namespace carve {
 			void addFace(Iter begin, Iter end)
 			{
 				size_t n = std::distance(begin, end);
-				faceIndices.reserve(faceIndices.size() + n + 1);
+				/*faceIndices.reserve(faceIndices.size() + n + 1);
 				faceIndices.push_back(n);
-				std::copy(begin, end, std::back_inserter(faceIndices));
+				std::copy(begin, end, std::back_inserter(faceIndices));*/
+				faceIndices.push_back(n);
+				faceIndices.insert(faceIndices.end(), begin, end);
 				++faceCount;
 			}
 
