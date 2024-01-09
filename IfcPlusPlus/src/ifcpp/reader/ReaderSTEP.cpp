@@ -132,7 +132,7 @@ void ReaderSTEP::loadModelFromFile(const std::string& filePath, shared_ptr<Build
 	}
 
 	// open file
-	setlocale(LC_ALL, "");
+	//setlocale(LC_ALL, "");
 	std::ifstream infile;
 	infile.open(filePathRead.c_str(), std::ifstream::in);
 
