@@ -1516,13 +1516,13 @@ namespace GeomUtils
 
 					if (std::abs(p10.x) < epsMergePoints && std::abs(p10.y) < epsMergePoints)
 					{
-						polygon.erase(polygon.begin() + ii - 1);
+						polygon.erase(polygon.begin() + (ii + 1) % polygon.size());
 						removedPoint = true;
 						break;
 					}
 					if (std::abs(p12.x) < epsMergePoints && std::abs(p12.y) < epsMergePoints)
 					{
-						polygon.erase(polygon.begin() + ii - 1);
+						polygon.erase(polygon.begin() + (ii + 1) % polygon.size());
 						removedPoint = true;
 						break;
 					}
@@ -1536,7 +1536,7 @@ namespace GeomUtils
 
 						if (std::abs(angle) < epsAlignedEdgesAngle)
 						{
-							polygon.erase(polygon.begin() + ii - 1);
+							polygon.erase(polygon.begin() + (ii + 1) % polygon.size());
 							removedPoint = true;
 							break;
 						}
