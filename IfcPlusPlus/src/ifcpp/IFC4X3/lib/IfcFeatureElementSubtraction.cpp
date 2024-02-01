@@ -77,7 +77,8 @@ void IFC4X3::IfcFeatureElementSubtraction::getAttributes( std::vector<std::pair<
 void IFC4X3::IfcFeatureElementSubtraction::getAttributesInverse( std::vector<std::pair<std::string, shared_ptr<BuildingObject> > >& vec_attributes_inverse ) const
 {
 	IFC4X3::IfcFeatureElement::getAttributesInverse( vec_attributes_inverse );
-	vec_attributes_inverse.emplace_back( std::make_pair( "VoidsElements_inverse", shared_ptr<BuildingEntity>( m_VoidsElements_inverse ) ) );
+	if(auto ptr = m_VoidsElements_inverse.lock(); ptr)
+		vec_attributes_inverse.emplace_back( std::make_pair( "VoidsElements_inverse", ptr) );
 }
 void IFC4X3::IfcFeatureElementSubtraction::setInverseCounterparts( shared_ptr<BuildingEntity> ptr_self_entity )
 {
