@@ -512,7 +512,7 @@ void ReaderSTEP::readSingleStepLine(const std::string& line, std::pair<std::stri
 	}
 	else
 	{
-		throw UnknownEntityException(entity_name_upper);
+		//throw UnknownEntityException(entity_name_upper);
 	}
 }
 
