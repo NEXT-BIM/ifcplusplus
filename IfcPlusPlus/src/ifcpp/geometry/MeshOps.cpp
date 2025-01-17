@@ -675,6 +675,7 @@ void MeshOps::classifyMeshesInside(std::vector<carve::mesh::Mesh<3>*>& meshes, s
 		{
 			// currentMeshAsMeshset is not an inner mesh, so merge it with  outerMeshAsMeshset
 			carve::csg::CSG csg(params.epsMergePoints);
+			if (outerMeshAsMeshset->meshes.empty()) continue;
 			shared_ptr<carve::mesh::MeshSet<3> > resultMerge(csg.compute(outerMeshAsMeshset.get(), currentMeshAsMeshset.get(), carve::csg::CSG::UNION, nullptr, carve::csg::CSG::CLASSIFY_EDGE));
 			if (resultMerge)
 			{
