@@ -494,16 +494,25 @@ void ReaderSTEP::readSingleStepLine(const std::string& line, std::pair<std::stri
 		{
 			if (entity_arg[0] == '(')
 			{
-				if (entity_arg[entity_arg.size() - 1] == ')')
+				int end_char_index = (int)entity_arg.size() - 1;
+				
+				while (end_char_index > 0 && isspace(entity_arg[end_char_index])) 
+					--end_char_index;
+
+				if (entity_arg[end_char_index] == ')')
 				{
 					// semicolon already removed
-					entity_arg = entity_arg.substr(1, entity_arg.size() - 2);
+					entity_arg = entity_arg.substr(1, end_char_index - 1);
 				}
-				else if (entity_arg[entity_arg.size() - 1] == ';')
+				else if (entity_arg[end_char_index] == ';')
 				{
-					if (entity_arg[entity_arg.size() - 2] == ')')
+					end_char_index -= 1;
+					while (end_char_index > 0 && isspace(entity_arg[end_char_index]))
+						--end_char_index;
+
+					if (entity_arg[end_char_index] == ')')
 					{
-						entity_arg = entity_arg.substr(1, entity_arg.size() - 3);
+						entity_arg = entity_arg.substr(1, end_char_index - 1);
 					}
 				}
 			}
@@ -537,7 +546,7 @@ void ReaderSTEP::readEntityArguments(std::vector<std::pair<std::string, shared_p
 #ifdef _DEBUG
 	std::set<std::string> setClassesWithAdjustedArguments;
 #endif
-
+#define _DEBUG_READ_SEQENTIAL
 #ifdef _DEBUG_READ_SEQENTIAL
 	std::for_each(std::execution::seq,
 #else
@@ -558,12 +567,12 @@ void ReaderSTEP::readEntityArguments(std::vector<std::pair<std::string, shared_p
 			std::string& argument_str = entity_read_object.first;
 			std::vector<std::string> arguments_raw;
 			tokenizeEntityArguments(argument_str, arguments_raw);
-			argument_str.clear();
+			//argument_str.clear();
 
 			// character decoding:
 			std::vector<std::string> arguments_decoded;
 			decodeArgumentStrings(arguments_raw, arguments_decoded);
-			arguments_raw.clear();
+			//arguments_raw.clear();
 
 			const size_t num_expected_arguments = entity->getNumAttributes();
 			if (entity->classID() == IFCCOLOURRGB)
