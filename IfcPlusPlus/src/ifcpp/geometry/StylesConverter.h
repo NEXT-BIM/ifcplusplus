@@ -71,7 +71,7 @@ class StylesConverter : public StatusCallback
 {
 protected:
 	std::map<int, shared_ptr<StyleData> > m_map_ifc_styles;
-	std::mutex m_writelock_styles_converter;
+	std::shared_mutex m_writelock_styles_converter;
 	std::mutex m_mutexSearch;
 
 public:
@@ -269,7 +269,9 @@ public:
 		int style_id = presentation_style->m_tag;
 		{
 
+			m_writelock_styles_converter.lock_shared();
 			auto it_find_existing_style = m_map_ifc_styles.find(style_id);
+			m_writelock_styles_converter.unlock_shared();
 			if (it_find_existing_style != m_map_ifc_styles.end())
 			{
 				// use existing style
@@ -286,7 +288,7 @@ public:
 					style_data = shared_ptr<StyleData>(new StyleData(style_id));
 				}
 
-				std::lock_guard<std::mutex> lock(m_writelock_styles_converter);
+				std::lock_guard<std::shared_mutex> lock(m_writelock_styles_converter);
 				m_map_ifc_styles[style_id] = style_data;
 			}
 		}
@@ -416,7 +418,7 @@ public:
 				style_data = shared_ptr<StyleData>(new StyleData(style_id));
 			}
 
-			std::lock_guard<std::mutex> lock(m_writelock_styles_converter);
+			std::lock_guard<std::shared_mutex> lock(m_writelock_styles_converter);
 			m_map_ifc_styles[style_id] = style_data;
 			style_data->m_apply_to_geometry_type = StyleData::GEOM_TYPE_CURVE;
 		}
@@ -657,8 +659,9 @@ public:
 		const int style_id = surface_style->m_tag;
 
 		{
-			std::lock_guard<std::mutex> lock(m_writelock_styles_converter);
+			m_writelock_styles_converter.lock_shared();
 			auto it_find_existing_style = m_map_ifc_styles.find(style_id);
+			m_writelock_styles_converter.unlock_shared();
 			if (it_find_existing_style != m_map_ifc_styles.end())
 			{
 				// todo: check if style compare is faster here
@@ -750,8 +753,9 @@ public:
 		const int style_id = styled_item->m_tag;
 
 		{
-			std::lock_guard<std::mutex> lock(m_writelock_styles_converter);
+			m_writelock_styles_converter.lock_shared();
 			auto it_find_existing_style = m_map_ifc_styles.find(style_id);
+			m_writelock_styles_converter.unlock_shared();
 			if (it_find_existing_style != m_map_ifc_styles.end())
 			{
 				vec_style_data.push_back(it_find_existing_style->second);
