@@ -1098,7 +1098,7 @@ public:
 				return;
 			}
 
-			double radius = sphere->m_Radius->m_value;
+			double radius = sphere->m_Radius->m_value * length_factor;
 
 			//        \   |   /
 			//         2- 1 -nvc
