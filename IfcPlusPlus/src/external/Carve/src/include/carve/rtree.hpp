@@ -258,7 +258,7 @@ namespace carve {
 			static void makeNodes(const iter_t begin, const iter_t end, size_t dim_num, uint32_t dim_mask, size_t child_size, std::vector<node_t*>& out)
 			{
 				const size_t N = std::distance(begin, end);
-
+				if(N == 0) return;
 				size_t dim = ndim;
 				double r_best = N + 1;
 
