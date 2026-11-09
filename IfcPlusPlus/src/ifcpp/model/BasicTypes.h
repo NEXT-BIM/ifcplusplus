@@ -22,6 +22,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 #include <version>
 #endif
 
+// NEXT-BIM: Apple's libc++ has no parallel algorithms: pstld provides them and defines __cpp_lib_execution (built with
+// PSTLD_HACK_INTO_STD), so it's included here, before the test, whatever the including file included first
+#if defined(__APPLE__) && __has_include(<pstld.h>)
+#include <pstld.h>
+#endif
+
 #ifdef __cpp_lib_execution
 	#include <execution>
 	#if defined(_DEBUG_LOOP_SEQENTIAL) || defined(_DEBUG)
