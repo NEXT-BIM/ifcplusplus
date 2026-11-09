@@ -1751,7 +1751,7 @@ namespace GeomDebugDump
 		std::ofstream ofs(file_path, std::ofstream::out);
 #else
 		std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-		std::string file_path8 = conv.to_bytes(file_path);
+		const std::string &file_path8 = file_path;
 		std::ofstream ofs(file_path8, std::ofstream::out);
 #endif
 		ofs << stream.str().c_str();
