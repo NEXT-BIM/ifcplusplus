@@ -17,6 +17,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 
 #pragma once
 
+#include <atomic>
+#include <exception>
+#include <thread>
 #include <unordered_set>
 #include <ifcpp/geometry/StylesConverter.h>
 #include <ifcpp/geometry/GeometrySettings.h>
@@ -913,28 +916,101 @@ public:
 		}
 	}
 
-	void subtractOpeningFromProductShape(const shared_ptr<ItemShapeData>& productShapeItem, std::vector<shared_ptr<carve::mesh::MeshSet<3> > >& vec_opening_meshes, const shared_ptr<IfcElement>& ifc_element)
+	static void collectProductMeshsets(const shared_ptr<ItemShapeData>& productShapeItem, std::vector<shared_ptr<carve::mesh::MeshSet<3> >*>& productMeshsets)
 	{
-		for (size_t i_product_meshset = 0; i_product_meshset < productShapeItem->m_meshsets.size(); ++i_product_meshset)
+		for (shared_ptr<carve::mesh::MeshSet<3> >& product_meshset : productShapeItem->m_meshsets)
 		{
-			// go through all meshsets of the item
-			shared_ptr<carve::mesh::MeshSet<3> >& product_meshset = productShapeItem->m_meshsets[i_product_meshset];
-
-			// do the subtraction
-			GeomProcessingParams params(m_geom_settings);
-			params.callbackFunc = this;
-			params.ifc_entity = ifc_element.get();
-			CSG_Adapter::computeCSG(product_meshset, vec_opening_meshes, carve::csg::CSG::A_MINUS_B, params);
+			productMeshsets.push_back(&product_meshset);
 		}
 
-		for (const shared_ptr<ItemShapeData>& product_item_data : productShapeItem->m_child_items )
+		for (const shared_ptr<ItemShapeData>& product_item_data : productShapeItem->m_child_items)
 		{
 			if (!product_item_data)
 			{
 				continue;
 			}
 
-			subtractOpeningFromProductShape(product_item_data, vec_opening_meshes, ifc_element);
+			collectProductMeshsets(product_item_data, productMeshsets);
+		}
+	}
+
+	void subtractOpeningFromProductShape(const shared_ptr<ItemShapeData>& productShapeItem, std::vector<shared_ptr<carve::mesh::MeshSet<3> > >& vec_opening_meshes, const shared_ptr<IfcElement>& ifc_element)
+	{
+		// go through all meshsets of the item and its children
+		std::vector<shared_ptr<carve::mesh::MeshSet<3> >*> productMeshsets;
+		collectProductMeshsets(productShapeItem, productMeshsets);
+
+		auto subtractFromMeshset = [&](shared_ptr<carve::mesh::MeshSet<3> >& product_meshset)
+		{
+			// do the subtraction
+			GeomProcessingParams params(m_geom_settings);
+			params.callbackFunc = this;
+			params.ifc_entity = ifc_element.get();
+			CSG_Adapter::computeCSG(product_meshset, vec_opening_meshes, carve::csg::CSG::A_MINUS_B, params);
+		};
+
+		if (productMeshsets.size() < 2)
+		{
+			for (shared_ptr<carve::mesh::MeshSet<3> >* product_meshset : productMeshsets)
+			{
+				subtractFromMeshset(*product_meshset);
+			}
+			return;
+		}
+
+		// NEXT-BIM: each meshset's subtraction only replaces that meshset (the booleans work on clones, the openings are
+		// only read), so they run on their own threads: a slab made of several solids pierced by many openings was the
+		// longest product of a whole model. Nested parallel algorithms would run serially here.
+		// The serial loop stopped at a meshset that threw, leaving the next ones as they were: the meshsets done after
+		// the first failing one are put back.
+		std::vector<shared_ptr<carve::mesh::MeshSet<3> > > meshsetsBefore(productMeshsets.size());
+		for (size_t ii = 0; ii < productMeshsets.size(); ++ii)
+		{
+			meshsetsBefore[ii] = *productMeshsets[ii];
+		}
+		std::vector<std::exception_ptr> meshsetErrors(productMeshsets.size());
+		std::atomic<size_t> nextMeshset(0);
+		std::atomic<size_t> firstFailedMeshset(productMeshsets.size());
+		auto subtractNextMeshsets = [&]()
+		{
+			for (size_t ii = nextMeshset++; ii < productMeshsets.size(); ii = nextMeshset++)
+			{
+				if (ii > firstFailedMeshset)
+				{
+					continue;
+				}
+				try
+				{
+					subtractFromMeshset(*productMeshsets[ii]);
+				}
+				catch (...)
+				{
+					meshsetErrors[ii] = std::current_exception();
+					size_t failed = firstFailedMeshset;
+					while (ii < failed && !firstFailedMeshset.compare_exchange_weak(failed, ii))
+					{
+					}
+				}
+			}
+		};
+		size_t numThreads = std::min(productMeshsets.size(), (size_t)std::max(1u, std::thread::hardware_concurrency()));
+		std::vector<std::thread> helpers;
+		for (size_t ii = 1; ii < numThreads; ++ii)
+		{
+			helpers.emplace_back(subtractNextMeshsets);
+		}
+		subtractNextMeshsets();
+		for (std::thread& helper : helpers)
+		{
+			helper.join();
+		}
+		if (firstFailedMeshset < productMeshsets.size())
+		{
+			for (size_t ii = firstFailedMeshset + 1; ii < productMeshsets.size(); ++ii)
+			{
+				*productMeshsets[ii] = meshsetsBefore[ii];
+			}
+			std::rethrow_exception(meshsetErrors[firstFailedMeshset]);
 		}
 	}
 
