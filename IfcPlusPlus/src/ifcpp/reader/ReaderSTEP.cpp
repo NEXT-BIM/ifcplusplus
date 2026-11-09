@@ -517,19 +517,25 @@ void ReaderSTEP::readSingleStepLine(const std::string& line, std::pair<std::stri
 		{
 			if (entity_arg[0] == '(')
 			{
-				if (entity_arg[entity_arg.size() - 1] == ')')
+				int end_char_index = (int)entity_arg.size() - 1;
+				
+				while (end_char_index > 0 && isspace(entity_arg[end_char_index])) 
+					--end_char_index;
+
+				if (entity_arg[end_char_index] == ')')
 				{
 					// semicolon already removed
-					entity_arg = entity_arg.substr(1, entity_arg.size() - 2);
+					entity_arg = entity_arg.substr(1, end_char_index - 1);
 				}
-				else if (entity_arg[entity_arg.size() - 1] == ';')
+				else if (entity_arg[end_char_index] == ';')
 				{
-					std::string whitespaces (" \t\f\v\n\r");
-					size_t closing_parent_pos = entity_arg.find_last_not_of(whitespaces, entity_arg.size() - 2);
+					end_char_index -= 1;
+					while (end_char_index > 0 && isspace(entity_arg[end_char_index]))
+						--end_char_index;
 
-					if (closing_parent_pos != std::string::npos && entity_arg[closing_parent_pos] == ')')
+					if (entity_arg[end_char_index] == ')')
 					{
-						entity_arg = entity_arg.substr(1, closing_parent_pos - 1);
+						entity_arg = entity_arg.substr(1, end_char_index - 1);
 					}
 				}
 			}
