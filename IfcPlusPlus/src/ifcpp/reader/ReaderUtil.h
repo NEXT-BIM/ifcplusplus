@@ -36,6 +36,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 #ifdef _MSC_VER
 #include <cstdio>
 #include <cstring>
+#include <cerrno>
+#ifdef __APPLE__
+#include <xlocale.h>
+#endif
 #pragma warning(disable : 4996)
 #endif
 
@@ -127,6 +131,23 @@ inline double stringToDouble(const std::string& str)
 		throw std::invalid_argument("stringToDouble: no conversion: " + str);
 	}
 	if (conversion.ec == std::errc::result_out_of_range)
+	{
+		throw std::out_of_range("stringToDouble: out of range: " + str);
+	}
+#elif defined(__APPLE__)
+	// NEXT-BIM: Apple's libc++ has no floating point std::from_chars before macOS and iOS 26, and an istringstream per
+	// number made parsing about 9 times slower than std::stod: strtod_l with the C locale, which parses as std::stod
+	// did (std::stod threw out_of_range on ERANGE)
+	static const locale_t c_locale = newlocale(LC_ALL_MASK, "C", nullptr);
+	const std::string number(first, last);
+	char* number_end = nullptr;
+	errno = 0;
+	result = strtod_l(number.c_str(), &number_end, c_locale);
+	if (number_end == number.c_str())
+	{
+		throw std::invalid_argument("stringToDouble: no conversion: " + str);
+	}
+	if (errno == ERANGE)
 	{
 		throw std::out_of_range("stringToDouble: out of range: " + str);
 	}
