@@ -731,6 +731,8 @@ namespace carve {
 
 			void recalc(double CARVE_EPSILON)
 			{
+				// NEXT-BIM: the cached volume of moved vertices is stale
+				resetVolume();
 				for( size_t i = 0; i < faces.size(); ++i )
 				{
 					faces[i]->recalc(CARVE_EPSILON);
@@ -748,6 +750,8 @@ namespace carve {
 				{
 					is_negative = !is_negative;
 				}
+				// NEXT-BIM: the cached volume changes sign
+				resetVolume();
 			}
 
 			Mesh* clone(const vertex_t* old_base, vertex_t* new_base) const;
