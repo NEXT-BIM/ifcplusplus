@@ -31,17 +31,27 @@
 namespace carve {
 namespace csg {
 namespace detail {
+// NEXT-BIM: pairs ordered by creation number for mesh objects (carve::key_less), not by address
+struct pair_less {
+  template <typename A, typename B>
+  bool operator()(const std::pair<A, B>& a, const std::pair<A, B>& b) const {
+    if (carve::key_less<A>()(a.first, b.first)) return true;
+    if (carve::key_less<A>()(b.first, a.first)) return false;
+    return carve::key_less<B>()(a.second, b.second);
+  }
+};
+
 typedef std::map<
     carve::mesh::Vertex<3>*,
-    std::set<std::pair<carve::mesh::Face<3>*, double> > >
+    std::set<std::pair<carve::mesh::Face<3>*, double>, pair_less> , carve::serial_less>
     EdgeIntInfo;
 
 typedef std::unordered_set<carve::mesh::Vertex<3>*> VSet;
 typedef std::unordered_set<carve::mesh::Face<3>*> FSet;
 
-typedef std::set<carve::mesh::Vertex<3>*> VSetSmall;
-typedef std::set<csg::V2> V2SetSmall;
-typedef std::set<carve::mesh::Face<3>*> FSetSmall;
+typedef std::set<carve::mesh::Vertex<3>*, carve::serial_less> VSetSmall;
+typedef std::set<csg::V2, pair_less> V2SetSmall;
+typedef std::set<carve::mesh::Face<3>*, carve::serial_less> FSetSmall;
 
 typedef std::unordered_map<carve::mesh::Vertex<3>*, VSetSmall>
     VVSMap;

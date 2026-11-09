@@ -124,8 +124,11 @@ void SolidModelConverter::convertIfcSolidModel( const shared_ptr<IfcSolidModel>&
 		shared_ptr<ProfileConverter> profile_converter = m_profile_cache->getProfileConverter( swept_area, true );
 		if (profile_converter)
 		{
-			profile_converter->simplifyPaths();
-			const std::vector<std::vector<vec2> >& profile_paths = profile_converter->getCoordinates();
+			// NEXT-BIM: the cached profile converter is shared by every use of the profile, across threads: each use
+			// simplifies its own copy (simplifyPath isn't idempotent, so simplifying the shared paths in place gave the
+			// Nth extrusion of a profile N passes, in whatever order the threads got there)
+			std::vector<std::vector<vec2> > profile_paths = profile_converter->getCoordinates();
+			profile_converter->simplifyPaths(profile_paths);
 
 			shared_ptr<IfcFixedReferenceSweptAreaSolid> fixed_reference_swept_area_solid = dynamic_pointer_cast<IfcFixedReferenceSweptAreaSolid>(swept_area_solid);
 			if (fixed_reference_swept_area_solid)
@@ -402,8 +405,9 @@ void SolidModelConverter::convertIfcExtrudedAreaSolid( const shared_ptr<IfcExtru
 	shared_ptr<ProfileConverter> profile_converter = m_profile_cache->getProfileConverter( swept_area, true );
 	if (profile_converter)
 	{
-		profile_converter->simplifyPaths();
-		const std::vector<std::vector<vec2> >& paths = profile_converter->getCoordinates();
+		// NEXT-BIM: simplifies its own copy of the shared profile, see convertIfcSolidModel
+		std::vector<std::vector<vec2> > paths = profile_converter->getCoordinates();
+		profile_converter->simplifyPaths(paths);
 
 		if (paths.size() == 0)
 		{
@@ -807,8 +811,9 @@ void SolidModelConverter::convertIfcRevolvedAreaSolid( const shared_ptr<IfcRevol
 	shared_ptr<ProfileConverter> profile_converter = m_profile_cache->getProfileConverter( swept_area_profile, true );
 	if (profile_converter)
 	{
-		profile_converter->simplifyPaths();
-		const std::vector<std::vector<vec2> >& profile_coords_unchecked = profile_converter->getCoordinates();
+		// NEXT-BIM: simplifies its own copy of the shared profile, see convertIfcSolidModel
+		std::vector<std::vector<vec2> > profile_coords_unchecked = profile_converter->getCoordinates();
+		profile_converter->simplifyPaths(profile_coords_unchecked);
 		convertRevolvedAreaSolid(profile_coords_unchecked, axis_location, axis_direction, revolution_angle, item_data);
 	}
 }

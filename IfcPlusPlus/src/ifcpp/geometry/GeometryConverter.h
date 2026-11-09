@@ -762,6 +762,8 @@ public:
 				}
 
 				const int tag = object_def->m_tag;
+				// NEXT-BIM: the product's mesh objects are numbered from its step id, whichever thread converts it
+				carve::serial_reset((uint64_t)(uint32_t)tag << 32);
 				std::string guid;
 				if (object_def->m_GlobalId)
 				{
@@ -834,6 +836,7 @@ public:
 			{
 				guid = object_def->m_GlobalId->m_value;
 			}
+			carve::serial_reset(((uint64_t)(uint32_t)object_def->m_tag << 32) | (1ull << 31));
 			auto it_find = m_product_shape_data.find(guid);
 			if (it_find != m_product_shape_data.end())
 			{

@@ -719,7 +719,7 @@ namespace carve {
 					vertex_t* v1 = edge->v1();
 					vertex_t* v2 = edge->v2();
 
-					std::set<face_t*> affected_faces;
+					std::set<face_t*, carve::serial_less> affected_faces;
 					for( std::set<EdgeInfo*>::iterator f = vert_to_edges[v1].begin();
 						f != vert_to_edges[v1].end(); ++f ) {
 						affected_faces.insert((*f)->edge->face);
@@ -979,7 +979,7 @@ namespace carve {
 
 			template <typename iter_t>
 			void snapFaces(iter_t begin, iter_t end, double grid, int axis, double CARVE_EPSILON) {
-				std::set<vertex_t*> vertices;
+				std::set<vertex_t*, carve::serial_less> vertices;
 				for( iter_t i = begin; i != end; ++i ) {
 					face_t* face = *i;
 					edge_t* edge = face->edge;
@@ -991,7 +991,7 @@ namespace carve {
 
 				std::vector<double> pos;
 				pos.reserve(vertices.size());
-				for( std::set<vertex_t*>::iterator i = vertices.begin();
+				for( std::set<vertex_t*, carve::serial_less>::iterator i = vertices.begin();
 					i != vertices.end(); ++i ) {
 					pos.push_back((*i)->v.v[axis]);
 				}
@@ -1003,7 +1003,7 @@ namespace carve {
 					snap_pos = round(snap_pos / grid) * grid;
 				}
 
-				for( std::set<vertex_t*>::iterator i = vertices.begin();
+				for( std::set<vertex_t*, carve::serial_less>::iterator i = vertices.begin();
 					i != vertices.end(); ++i ) {
 					(*i)->v.v[axis] = snap_pos;
 				}
@@ -1254,7 +1254,7 @@ namespace carve {
 				typedef std::unordered_map<face_t*, uint8_t> axis_influence_map_t;
 				axis_influence_map_t axis_influence;
 
-				typedef std::unordered_map<face_t*, std::set<face_t*> > interaction_graph_t;
+				typedef std::unordered_map<face_t*, std::set<face_t*, carve::serial_less> > interaction_graph_t;
 				interaction_graph_t interacting_faces;
 
 				for( size_t m = 0; m < meshset->meshes.size(); ++m ) {
@@ -1265,7 +1265,7 @@ namespace carve {
 					}
 				}
 
-				std::map<vertex_t*, std::list<carve::geom::plane<3> > > non_axis_vertices;
+				std::map<vertex_t*, std::list<carve::geom::plane<3> > , carve::serial_less> non_axis_vertices;
 				std::unordered_map<vertex_t*, uint8_t> vertex_constraints;
 
 				for( axis_influence_map_t::iterator i = axis_influence.begin();
@@ -1298,10 +1298,10 @@ namespace carve {
 				}
 
 				while( interacting_faces.size() ) {
-					std::set<face_t*> face_set;
+					std::set<face_t*, carve::serial_less> face_set;
 					uint8_t axes = 0;
 
-					std::set<face_t*> open;
+					std::set<face_t*, carve::serial_less> open;
 					open.insert((*interacting_faces.begin()).first);
 					while( open.size() ) {
 						face_t* curr = *open.begin();
@@ -1330,13 +1330,13 @@ namespace carve {
 						CARVE_FAIL("should not be reached");
 					}
 
-					for( std::set<face_t*>::iterator i = face_set.begin();
+					for( std::set<face_t*, carve::serial_less>::iterator i = face_set.begin();
 						i != face_set.end(); ++i ) {
 						interacting_faces.erase((*i));
 					}
 				}
 
-				for( std::map<vertex_t*, std::list<carve::geom::plane<3> > >::iterator i =
+				for( std::map<vertex_t*, std::list<carve::geom::plane<3> > , carve::serial_less>::iterator i =
 					non_axis_vertices.begin();
 					i != non_axis_vertices.end(); ++i ) {
 					vertex_t* vert = (*i).first;
@@ -1559,7 +1559,7 @@ namespace carve {
 
 			struct quantization_info_t {
 				point_enumerator_t* pt;
-				std::set<face_t*> faces;
+				std::set<face_t*, carve::serial_less> faces;
 
 				quantization_info_t() : pt(nullptr), faces() {}
 
@@ -1570,7 +1570,7 @@ namespace carve {
 				}
 
 				aabb_t getAABB() const {
-					std::set<face_t*>::iterator i = faces.begin();
+					std::set<face_t*, carve::serial_less>::iterator i = faces.begin();
 					aabb_t aabb = (*i)->getAABB();
 					while( ++i != faces.end() ) {
 						aabb.unionAABB((*i)->getAABB());

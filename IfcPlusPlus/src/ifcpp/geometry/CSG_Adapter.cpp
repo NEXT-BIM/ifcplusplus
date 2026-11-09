@@ -329,6 +329,10 @@ bool CSG_Adapter::computeCSG_Carve(const shared_ptr<carve::mesh::MeshSet<3> >& i
 	MeshOps::checkMeshSetValidAndClosed(inputA, infoInputA, paramsScaled);
 	MeshOps::checkMeshSetValidAndClosed(inputB, infoInputB, paramsScaled);
 
+	// NEXT-BIM: the boolean hashes its mesh objects by number (carve::serial_t): its operands' copies and everything it
+	// creates are numbered from the same base every time, whatever was numbered before (which may depend on whether
+	// another thread had already converted an opening)
+	carve::serial_reset(1ull << 62);
 	shared_ptr<carve::mesh::MeshSet<3> > op1(inputA->clone());
 	shared_ptr<carve::mesh::MeshSet<3> > op2(inputB->clone());
 

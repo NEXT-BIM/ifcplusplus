@@ -66,7 +66,7 @@ namespace carve {
 				EdgeSurface() : fwd(nullptr), fwd_ang(0.0), rev(nullptr), rev_ang(0.0) {}
 			};
 
-			typedef std::map<const carve::mesh::MeshSet<3>::mesh_t*, EdgeSurface> GrpEdgeSurfMap;
+			typedef std::map<const carve::mesh::MeshSet<3>::mesh_t*, EdgeSurface, carve::serial_less> GrpEdgeSurfMap;
 			typedef std::pair<FaceLoopGroup*, const carve::mesh::MeshSet<3>::mesh_t*> ClassificationKey;
 
 			struct ClassificationData {
@@ -84,25 +84,25 @@ namespace carve {
 
 			struct hash_classification {
 				size_t operator()(const ClassificationKey& f) const {
-					return (size_t)f.first ^ (size_t)f.second;
+					return carve::serial_hash()(f.first) ^ (carve::serial_hash()(f.second) << 1);
 				}
 			};
 
 			struct hash_group_ptr {
-				size_t operator()(const FaceLoopGroup* const& f) const { return (size_t)f; }
+				size_t operator()(const FaceLoopGroup* const& f) const { return carve::serial_hash()(f); }
 			};
 
 			typedef std::pair<size_t, const carve::mesh::Vertex<3>*> PerimKey;
 
 			struct hash_perim_key {
 				size_t operator()(const PerimKey& v) const {
-					return (size_t)v.first ^ (size_t)v.second;
+					return (size_t)v.first ^ carve::serial_hash()(v.second);
 				}
 			};
 
 			struct hash_group_pair {
 				size_t operator()(const std::pair<int, const FaceLoopGroup*>& v) const {
-					return (size_t)v.first ^ (size_t)v.second;
+					return (size_t)v.first ^ carve::serial_hash()(v.second);
 				}
 			};
 
@@ -450,7 +450,11 @@ namespace carve {
 						continue;
 					}
 					const carve::mesh::Vertex<3>* perim_min =
-						std::min_element((*i).perimeter.begin(), (*i).perimeter.end())->first;
+						std::min_element((*i).perimeter.begin(), (*i).perimeter.end(), [](const carve::csg::V2& a, const carve::csg::V2& b) {
+							// NEXT-BIM: by creation number, not address
+							carve::serial_less less;
+							return a.first != b.first ? less(a.first, b.first) : less(a.second, b.second);
+						})->first;
 					perim_map[std::make_pair(perim_size, perim_min)].insert(&(*i));
 				}
 			}
@@ -605,7 +609,7 @@ namespace carve {
 
 #if defined(DISPLAY_GRP_GRAPH)
 			// XXX: this is hopelessly inefficient.
-			std::map<const FaceLoopGroup*, std::set<const FaceLoopGroup*> >
+			std::map<const FaceLoopGroup*, std::set<const FaceLoopGroup*, carve::serial_less> , carve::serial_less>
 				grp_graph_fwd, grp_graph_rev;
 			{
 				for( FLGroupList::iterator i = a_loops_grouped.begin();
@@ -930,22 +934,22 @@ namespace carve {
                    : "[B:") +                                          \
    CODE(grp) + "]")
 
-			for( std::map<const FaceLoopGroup*, std::set<const FaceLoopGroup*> >::iterator i = grp_graph_fwd.begin(); i != grp_graph_fwd.end(); ++i )
+			for( std::map<const FaceLoopGroup*, std::set<const FaceLoopGroup*, carve::serial_less> , carve::serial_less>::iterator i = grp_graph_fwd.begin(); i != grp_graph_fwd.end(); ++i )
 			{
 				const FaceLoopGroup* grp = (*i).first;
 
 				std::cerr << "GRP: " << grp << POLY(grp) << std::endl;
 
-				std::set<const FaceLoopGroup*>& fwd_set = grp_graph_fwd[grp];
-				std::set<const FaceLoopGroup*>& rev_set = grp_graph_rev[grp];
+				std::set<const FaceLoopGroup*, carve::serial_less>& fwd_set = grp_graph_fwd[grp];
+				std::set<const FaceLoopGroup*, carve::serial_less>& rev_set = grp_graph_rev[grp];
 				std::cerr << "  FWD: ";
-				for( std::set<const FaceLoopGroup*>::const_iterator j = fwd_set.begin();
+				for( std::set<const FaceLoopGroup*, carve::serial_less>::const_iterator j = fwd_set.begin();
 					j != fwd_set.end(); ++j ) {
 					std::cerr << " " << (*j) << POLY(*j);
 				}
 				std::cerr << std::endl;
 				std::cerr << "  REV: ";
-				for( std::set<const FaceLoopGroup*>::const_iterator j = rev_set.begin();
+				for( std::set<const FaceLoopGroup*, carve::serial_less>::const_iterator j = rev_set.begin();
 					j != rev_set.end(); ++j ) {
 					std::cerr << " " << (*j) << POLY(*j);
 				}

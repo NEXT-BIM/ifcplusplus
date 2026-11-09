@@ -23,8 +23,8 @@ public:
 	double m_epsMergePoints = 1e-8;
 	double m_epsMergeOpenEdgesToPoint = 50*1e-8;
 	bool m_openEdgesMergedToPoint = false;
-	std::set<carve::mesh::Edge<3>* > m_setOpenEdges;
-	std::unordered_map<carve::mesh::Vertex<3>*, std::set<carve::mesh::Edge<3>* > > m_mapVertexOpenEdges;
+	std::set<carve::mesh::Edge<3>* , carve::serial_less> m_setOpenEdges;
+	std::unordered_map<carve::mesh::Vertex<3>*, std::set<carve::mesh::Edge<3>* , carve::serial_less> > m_mapVertexOpenEdges;
 	std::vector<std::vector<carve::mesh::Edge<3>*> > m_closedEdgeLoopsOfOpenEdges;
 	std::vector<carve::mesh::Edge<3>* > m_createdEdgesToDelete;
 	const carve::mesh::Mesh<3>* m_mesh = nullptr;
@@ -71,7 +71,7 @@ public:
 			return;
 		}
 
-		std::set<carve::mesh::Vertex<3>* > openEdgeVertices;
+		std::set<carve::mesh::Vertex<3>* , carve::serial_less> openEdgeVertices;
 		std::set<vec3> openEdgeVertexPoints;
 		for (auto openEdge : mesh->open_edges)
 		{
@@ -140,11 +140,11 @@ public:
 		}
 	}
 
-	bool findNextEdge(const carve::mesh::Vertex<3>* startVertex, carve::mesh::Vertex<3>* currentVertex, carve::mesh::Edge<3>* currentEdge, std::set<carve::mesh::Edge<3>*>& setCurrentPath, std::vector<shared_ptr<EdgeLoopElement> >& vecLoopEdges)
+	bool findNextEdge(const carve::mesh::Vertex<3>* startVertex, carve::mesh::Vertex<3>* currentVertex, carve::mesh::Edge<3>* currentEdge, std::set<carve::mesh::Edge<3>* , carve::serial_less>& setCurrentPath, std::vector<shared_ptr<EdgeLoopElement> >& vecLoopEdges)
 	{
 		auto itFindVertexMapV1 = m_mapVertexOpenEdges.find(currentVertex);
 
-		std::set<carve::mesh::Edge<3>* >& setEdgesFromStartVertex = itFindVertexMapV1->second;
+		std::set<carve::mesh::Edge<3>* , carve::serial_less>& setEdgesFromStartVertex = itFindVertexMapV1->second;
 
 		for (carve::mesh::Edge<3>*checkEdge : setEdgesFromStartVertex)
 		{
@@ -223,7 +223,7 @@ public:
 
 			continue;
 
-			std::set<carve::mesh::Edge<3>* >& setEdgesFromCurrentVertex = itFindVertexMapV1->second;
+			std::set<carve::mesh::Edge<3>* , carve::serial_less>& setEdgesFromCurrentVertex = itFindVertexMapV1->second;
 			for (auto it : setEdgesFromStartVertex)
 			{
 				carve::mesh::Edge<3>* edgeFromOppositeVertex = it;
@@ -390,7 +390,7 @@ public:
 			carve::mesh::Edge<3>* openEdge1 = nullptr;
 			carve::mesh::Edge<3>* openEdge2 = nullptr;
 			
-			std::set<carve::mesh::Edge<3>* >& openEdgesFromAndToStartVertex = itFindVertexMapV1->second;
+			std::set<carve::mesh::Edge<3>* , carve::serial_less>& openEdgesFromAndToStartVertex = itFindVertexMapV1->second;
 
 			for (carve::mesh::Edge<3>* openEdge1 : openEdgesFromAndToStartVertex)
 			{
@@ -423,7 +423,7 @@ public:
 #endif
 
 				bool edgeIsReversed = false;
-				std::set<std::pair<carve::mesh::Vertex<3>*, carve::mesh::Vertex<3>*>> closeButNotIdinticalVertices;
+				std::set<std::pair<carve::mesh::Vertex<3>*, carve::mesh::Vertex<3>*>, carve::serial_pair_less> closeButNotIdinticalVertices;
 				openEdge2 = findEdgeByStartAndEndPoint(startVertex, simpleLoopEndVertex, openEdge1, edgeIsReversed, m_epsMergePoints, closeButNotIdinticalVertices);
 				if (!openEdge2)
 				{
@@ -625,10 +625,10 @@ public:
 		}
 
 		// find connected sets of vertices
-		//std::unordered_map<carve::mesh::Vertex<3>*, std::set<carve::mesh::Edge<3>* > > mapVertexOpenEdges;
-		std::vector<std::set<carve::mesh::Edge<3>*> > connectedEdges;
-		std::set<carve::mesh::Vertex<3>*> setVerticesDone;
-		std::set<carve::mesh::Edge<3>*> setEdgesDone;
+		//std::unordered_map<carve::mesh::Vertex<3>*, std::set<carve::mesh::Edge<3>* , carve::serial_less> > mapVertexOpenEdges;
+		std::vector<std::set<carve::mesh::Edge<3>* , carve::serial_less> > connectedEdges;
+		std::set<carve::mesh::Vertex<3>* , carve::serial_less> setVerticesDone;
+		std::set<carve::mesh::Edge<3>* , carve::serial_less> setEdgesDone;
 		for (auto it = m_mapVertexOpenEdges.begin(); it != m_mapVertexOpenEdges.end(); ++it)
 		{
 			// get all connected vertices
@@ -639,9 +639,9 @@ public:
 			//}
 			//setVerticesDone.insert(startVertex);
 
-			std::set<carve::mesh::Edge<3>* > currentSetOfConnectedEdges;
+			std::set<carve::mesh::Edge<3>* , carve::serial_less> currentSetOfConnectedEdges;
 
-			std::set<carve::mesh::Edge<3>* >& edgesConnectedToStartVertex = it->second;
+			std::set<carve::mesh::Edge<3>* , carve::serial_less>& edgesConnectedToStartVertex = it->second;
 			for (auto it2 = edgesConnectedToStartVertex.begin(); it2 != edgesConnectedToStartVertex.end(); ++it2)
 			{
 				carve::mesh::Edge<3>* edgeConnected = *it2;
@@ -696,7 +696,7 @@ public:
 			carve::mesh::Vertex<3>* startVertex = itFindVertexMapV1->first;
 			carve::mesh::Edge<3>* currentEdge = nullptr;
 
-			std::set<carve::mesh::Edge<3>*> setCurrentPath;
+			std::set<carve::mesh::Edge<3>* , carve::serial_less> setCurrentPath;
 			bool foundLoop = findNextEdge(startVertex, startVertex, currentEdge, setCurrentPath, vecLoopEdges);
 
 			itFindVertexMapV1 = m_mapVertexOpenEdges.erase(itFindVertexMapV1);
@@ -788,12 +788,12 @@ public:
 		}
 	}
 
-	void findEdgesByStartPoint(carve::mesh::Vertex<3>* vertex, std::set<carve::mesh::Edge<3>* >& result,
+	void findEdgesByStartPoint(carve::mesh::Vertex<3>* vertex, std::set<carve::mesh::Edge<3>* , carve::serial_less>& result,
 		carve::mesh::Edge<3>* excludeEdge, double epsMergePoints)
 	{
 		for (auto it : m_mapVertexOpenEdges)
 		{
-			std::set<carve::mesh::Edge<3>* >& openEdgesFromAndVertex = it.second;
+			std::set<carve::mesh::Edge<3>* , carve::serial_less>& openEdgesFromAndVertex = it.second;
 
 			for (carve::mesh::Edge<3>*edge : openEdgesFromAndVertex)
 			{
@@ -831,7 +831,7 @@ public:
 	//			{
 	//				if (std::abs(delt.z) < epsMergePoints)
 	//				{
-	//					std::set<carve::mesh::Edge<3>* >& openEdgesFromAndVertex = it.second;
+	//					std::set<carve::mesh::Edge<3>* , carve::serial_less>& openEdgesFromAndVertex = it.second;
 
 	//					for (carve::mesh::Edge<3>*edge : openEdgesFromAndVertex)
 	//					{
@@ -850,9 +850,9 @@ public:
 
 	carve::mesh::Edge<3>* findEdgeByStartAndEndPoint(carve::mesh::Vertex<3>* startVertex, carve::mesh::Vertex<3>* endVertex,
 		carve::mesh::Edge<3>* excludeEdge, bool& edgeIsReversed, double epsMergePoints, 
-		std::set<std::pair<carve::mesh::Vertex<3>*, carve::mesh::Vertex<3>*>>& closeButNotIdinticalVertices)
+		std::set<std::pair<carve::mesh::Vertex<3>*, carve::mesh::Vertex<3>*>, carve::serial_pair_less>& closeButNotIdinticalVertices)
 	{
-		std::set<carve::mesh::Edge<3>* > edgesFromStartVertex;
+		std::set<carve::mesh::Edge<3>* , carve::serial_less> edgesFromStartVertex;
 		findEdgesByStartPoint(startVertex, edgesFromStartVertex, excludeEdge, epsMergePoints);
 
 		for (carve::mesh::Edge<3>*edge : edgesFromStartVertex)
@@ -877,7 +877,7 @@ public:
 			}
 		}
 
-		std::set<carve::mesh::Edge<3>* > edgesFromEndVertex;
+		std::set<carve::mesh::Edge<3>* , carve::serial_less> edgesFromEndVertex;
 		findEdgesByStartPoint(endVertex, edgesFromEndVertex, excludeEdge, epsMergePoints);
 
 		for (carve::mesh::Edge<3>*edge : edgesFromEndVertex)
@@ -921,7 +921,7 @@ public:
 		//				{
 		//					if (std::abs(delt.z) < epsMergePoints)
 		//					{
-		//						std::set<carve::mesh::Edge<3>* >& openEdgesFromAndVertex = it.second;
+		//						std::set<carve::mesh::Edge<3>* , carve::serial_less>& openEdgesFromAndVertex = it.second;
 		//
 		//						for (carve::mesh::Edge<3>*edge : openEdgesFromAndVertex)
 		//						{

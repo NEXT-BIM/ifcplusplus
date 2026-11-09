@@ -137,7 +137,7 @@ static bool find_cycles(edge_graph_t &eg, std::list<V2Set> &cycles) {
 
 static bool eliminate_simple(const LoopEdges &edge_map,
                              V2Set &edges,
-                             std::set<FaceLoop *> &loops,
+                             std::set<FaceLoop *, carve::serial_less> &loops,
                              V2Set &extra_edges) {
   const Vector *v1, *v2;
   loops.clear();
@@ -178,8 +178,8 @@ static bool eliminate_simple(const LoopEdges &edge_map,
         std::cerr << "    adding edge " << v2 << "-" << v1 << std::endl;
 #endif
         edges.insert(std::make_pair(v2, v1));
-        extra_edges.insert(std::make_pair(std::min(v1, v2), 
-                                          std::max(v1, v2)));
+        // NEXT-BIM: by creation number, not address
+        extra_edges.insert(carve::csg::ordered_edge(v1, v2));
       }
 
       v1 = v2;
@@ -345,7 +345,7 @@ static void classifyOnFaces_2(FaceLoopList &a_face_loops,
 
   for (std::list<V2Set>::iterator
          i = cycles.begin(), e = cycles.end(); i != e; ++i) {
-    std::set<FaceLoop *> a_loopset, b_loopset;
+    std::set<FaceLoop *, carve::serial_less> a_loopset, b_loopset;
     V2Set b_cycle;
     V2Set a_extra_edges, b_extra_edges;
 
@@ -387,7 +387,7 @@ static void classifyOnFaces_2(FaceLoopList &a_face_loops,
                 << "         b_class = " << ENUM(b_class) << std::endl;
 #endif
 
-      for (std::set<FaceLoop *>::const_iterator
+      for (std::set<FaceLoop *, carve::serial_less>::const_iterator
              j = a_loopset.begin(), je = a_loopset.end(); j != je; ++j) {
         collector.collect((*j)->orig_face,
                           (*j)->vertices,
@@ -397,7 +397,7 @@ static void classifyOnFaces_2(FaceLoopList &a_face_loops,
         edge_map_a.removeFaceLoop((*j));
         a_face_loops.remove((*j));
       }
-      for (std::set<FaceLoop *>::const_iterator
+      for (std::set<FaceLoop *, carve::serial_less>::const_iterator
              j = b_loopset.begin(), je = b_loopset.end(); j != je; ++j) {
         collector.collect((*j)->orig_face,
                           (*j)->vertices,
@@ -440,7 +440,7 @@ static void classifyOnFaces_2(FaceLoopList &a_face_loops,
 
   for (std::list<V2Set>::iterator
          i = cycles.begin(), e = cycles.end(); i != e; ++i) {
-    std::set<FaceLoop *> a_loopset, b_loopset;
+    std::set<FaceLoop *, carve::serial_less> a_loopset, b_loopset;
     V2Set b_cycle((*i));
     V2Set a_extra_edges, b_extra_edges;
 
@@ -477,7 +477,7 @@ static void classifyOnFaces_2(FaceLoopList &a_face_loops,
                 << "         b_class = " << ENUM(b_class) << std::endl;
 #endif
 
-      for (std::set<FaceLoop *>::const_iterator
+      for (std::set<FaceLoop *, carve::serial_less>::const_iterator
              j = a_loopset.begin(), je = a_loopset.end(); j != je; ++j) {
         collector.collect((*j)->orig_face,
                           (*j)->vertices,
@@ -487,7 +487,7 @@ static void classifyOnFaces_2(FaceLoopList &a_face_loops,
         edge_map_a.removeFaceLoop((*j));
         a_face_loops.remove((*j));
       }
-      for (std::set<FaceLoop *>::const_iterator
+      for (std::set<FaceLoop *, carve::serial_less>::const_iterator
              j = b_loopset.begin(), je = b_loopset.end(); j != je; ++j) {
         collector.collect((*j)->orig_face,
                           (*j)->vertices,

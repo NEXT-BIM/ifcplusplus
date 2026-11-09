@@ -56,7 +56,7 @@ namespace {
 		iter_t h_end, const std::string& fname) {
 		std::cerr << "dumping " << std::distance(f_begin, f_end) << " faces, "
 			<< std::distance(h_begin, h_end) << " holes." << std::endl;
-		std::map<carve::mesh::Vertex<3>*, size_t> v_included;
+		std::map<carve::mesh::Vertex<3>*, size_t, carve::serial_less> v_included;
 
 		for( iter_t i = f_begin; i != f_end; ++i ) {
 			for( size_t j = 0; j < (*i).size(); ++j ) {
@@ -78,7 +78,7 @@ namespace {
 
 		carve::line::PolylineSet fh;
 		fh.vertices.resize(v_included.size());
-		for( std::map<carve::mesh::Vertex<3>*, size_t>::const_iterator i =
+		for( std::map<carve::mesh::Vertex<3>*, size_t, carve::serial_less>::const_iterator i =
 			v_included.begin();
 			i != v_included.end(); ++i ) {
 			fh.vertices[(*i).second].v = (*i).first->v;
@@ -440,7 +440,8 @@ namespace {
 					++J;
 				} while( J < H && h[h_sort[J]] == t );
 			}
-			else if( f[i] < h[j] ) {
+			// NEXT-BIM: in the order f_sort and h_sort were sorted in (by creation number)
+			else if( carve::serial_less()(f[i], h[j]) ) {
 				++I;
 			}
 			else {
@@ -512,7 +513,7 @@ namespace {
 			}
 			face_loop_areas.push_back( carve::geom2d::signedArea(face_loops_projected[m]));
 
-			std::sort(face_loops_sorted[m].begin(), face_loops_sorted[m].end(), carve::make_index_sort(face_loops[m].begin()));
+			std::sort(face_loops_sorted[m].begin(), face_loops_sorted[m].end(), carve::make_index_sort(face_loops[m].begin(), carve::serial_less())); // NEXT-BIM: by creation number
 			face_loop_aabb[m].fit(face_loops_projected[m].begin(), face_loops_projected[m].end());
 		}
 
@@ -530,7 +531,7 @@ namespace {
 			}
 			hole_loop_areas.push_back( carve::geom2d::signedArea(hole_loops_projected[m]));
 
-			std::sort(hole_loops_sorted[m].begin(), hole_loops_sorted[m].end(), carve::make_index_sort(hole_loops[m].begin()));
+			std::sort(hole_loops_sorted[m].begin(), hole_loops_sorted[m].end(), carve::make_index_sort(hole_loops[m].begin(), carve::serial_less())); // NEXT-BIM: by creation number
 			hole_loop_aabb[m].fit(hole_loops_projected[m].begin(), hole_loops_projected[m].end());
 		}
 
@@ -1482,7 +1483,7 @@ namespace {
 
 	void dumpAsGraph( carve::mesh::Face<3>* face, const std::vector<carve::mesh::Vertex<3>*>& base_loop, const carve::csg::V2Set& face_edges, const carve::csg::V2Set& split_edges)
 	{
-		std::map<carve::mesh::Vertex<3>*, carve::geom2d::P2> proj;
+		std::map<carve::mesh::Vertex<3>*, carve::geom2d::P2, carve::serial_less> proj;
 
 		for( size_t i = 0; i < base_loop.size(); ++i ) {
 			proj[base_loop[i]] = face->project(base_loop[i]->v);
@@ -1494,7 +1495,7 @@ namespace {
 
 		{
 			carve::geom2d::P2 lo, hi;
-			std::map<carve::mesh::Vertex<3>*, carve::geom2d::P2>::iterator i; 
+			std::map<carve::mesh::Vertex<3>*, carve::geom2d::P2, carve::serial_less>::iterator i; 
 			i = proj.begin();
 			lo = hi = (*i).second;
 			for( ; i != proj.end(); ++i ) {
@@ -1511,7 +1512,7 @@ namespace {
 
 		std::cerr << "graph G {\nnode [shape=circle,style=filled,fixedsize=true,width=\".1\",height=\".1\"];\nedge [len=4]\n";
 
-		for( std::map<carve::mesh::Vertex<3>*, carve::geom2d::P2>::iterator i = proj.begin(); i != proj.end(); ++i )
+		for( std::map<carve::mesh::Vertex<3>*, carve::geom2d::P2, carve::serial_less>::iterator i = proj.begin(); i != proj.end(); ++i )
 		{
 			std::cerr << "   " << ptrstr((*i).first) << " [pos=\"" << (*i).second.x << "," << (*i).second.y << "!\"];\n";
 		}

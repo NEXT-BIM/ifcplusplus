@@ -90,7 +90,7 @@ void carve::csg::CSG::findSharedEdges(const detail::LoopEdges& edge_map_a,
   {
     carve::line::PolylineSet intersection_graph;
     intersection_graph.vertices.resize(edge_graph.size());
-    std::map<const carve::mesh::Vertex<3>*, size_t> vmap;
+    std::map<const carve::mesh::Vertex<3>*, size_t, carve::serial_less> vmap;
 
     size_t j = 0;
     for (detail::VVSMap::const_iterator i = edge_graph.begin();

@@ -27,13 +27,23 @@
 #include <carve/carve.hpp>
 #include <carve/classification.hpp>
 #include <carve/collection_types.hpp>
+#include <carve/tag.hpp>
 
 namespace carve {
 namespace csg {
 
+struct FaceLoop;
 struct FaceLoopGroup;
+}  // namespace csg
+}  // namespace carve
 
-struct FaceLoop {
+CARVE_SERIAL_POINTER_TRAITS(template <>, carve::csg::FaceLoop)
+CARVE_SERIAL_POINTER_TRAITS(template <>, carve::csg::FaceLoopGroup)
+
+namespace carve {
+namespace csg {
+
+struct FaceLoop : public carve::serial_t {
   FaceLoop *next, *prev;
   const carve::mesh::Face<3>* orig_face;
   std::vector<carve::mesh::Vertex<3>*> vertices;
@@ -109,7 +119,7 @@ struct FaceLoopList {
   }
 };
 
-struct FaceLoopGroup {
+struct FaceLoopGroup : public carve::serial_t {
   const carve::mesh::MeshSet<3>* src;
   FaceLoopList face_loops;
   V2Set perimeter;

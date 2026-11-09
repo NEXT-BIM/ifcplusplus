@@ -940,27 +940,27 @@ public:
 		std::vector<shared_ptr<carve::mesh::MeshSet<3> >*> productMeshsets;
 		collectProductMeshsets(productShapeItem, productMeshsets);
 
-		auto subtractFromMeshset = [&](shared_ptr<carve::mesh::MeshSet<3> >& product_meshset)
+		auto subtractFromMeshset = [&](shared_ptr<carve::mesh::MeshSet<3> >& product_meshset, std::vector<shared_ptr<carve::mesh::MeshSet<3> > >& openings)
 		{
 			// do the subtraction
 			GeomProcessingParams params(m_geom_settings);
 			params.callbackFunc = this;
 			params.ifc_entity = ifc_element.get();
-			CSG_Adapter::computeCSG(product_meshset, vec_opening_meshes, carve::csg::CSG::A_MINUS_B, params);
+			CSG_Adapter::computeCSG(product_meshset, openings, carve::csg::CSG::A_MINUS_B, params);
 		};
 
 		if (productMeshsets.size() < 2)
 		{
 			for (shared_ptr<carve::mesh::MeshSet<3> >* product_meshset : productMeshsets)
 			{
-				subtractFromMeshset(*product_meshset);
+				subtractFromMeshset(*product_meshset, vec_opening_meshes);
 			}
 			return;
 		}
 
-		// NEXT-BIM: each meshset's subtraction only replaces that meshset (the booleans work on clones, the openings are
-		// only read), so they run on their own threads: a slab made of several solids pierced by many openings was the
-		// longest product of a whole model. Nested parallel algorithms would run serially here.
+		// NEXT-BIM: each meshset's subtraction only replaces that meshset (the booleans work on clones of it, and on
+		// copies of the openings), so they run on their own threads: a slab made of several solids pierced by many
+		// openings was the longest product of a whole model. Nested parallel algorithms would run serially here.
 		// The serial loop stopped at a meshset that threw, leaving the next ones as they were: the meshsets done after
 		// the first failing one are put back.
 		std::vector<shared_ptr<carve::mesh::MeshSet<3> > > meshsetsBefore(productMeshsets.size());
@@ -969,6 +969,9 @@ public:
 			meshsetsBefore[ii] = *productMeshsets[ii];
 		}
 		std::vector<std::exception_ptr> meshsetErrors(productMeshsets.size());
+		// NEXT-BIM: each meshset numbers its mesh objects (carve::serial_t) from its own base, whichever thread runs it
+		const uint64_t serialBase = carve::serial_t::counter();
+		const uint64_t serialStride = 1ull << 26;
 		std::atomic<size_t> nextMeshset(0);
 		std::atomic<size_t> firstFailedMeshset(productMeshsets.size());
 		auto subtractNextMeshsets = [&]()
@@ -981,7 +984,15 @@ public:
 				}
 				try
 				{
-					subtractFromMeshset(*productMeshsets[ii]);
+					// NEXT-BIM: the validity checks of each subtraction may fix an opening in place (inverting a
+					// negative mesh): each meshset works on its own copies
+					carve::serial_reset(serialBase + (ii + 1) * serialStride);
+					std::vector<shared_ptr<carve::mesh::MeshSet<3> > > openings;
+					for (const shared_ptr<carve::mesh::MeshSet<3> >& opening : vec_opening_meshes)
+					{
+						openings.push_back(opening ? shared_ptr<carve::mesh::MeshSet<3> >(opening->clone()) : opening);
+					}
+					subtractFromMeshset(*productMeshsets[ii], openings);
 				}
 				catch (...)
 				{
@@ -1004,6 +1015,7 @@ public:
 		{
 			helper.join();
 		}
+		carve::serial_reset(serialBase + (productMeshsets.size() + 1) * serialStride);
 		if (firstFailedMeshset < productMeshsets.size())
 		{
 			for (size_t ii = firstFailedMeshset + 1; ii < productMeshsets.size(); ++ii)

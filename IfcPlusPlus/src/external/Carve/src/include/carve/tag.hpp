@@ -30,8 +30,66 @@
 #include <iostream>
 #endif
 
+#include <cstdint>
+#include <cstddef>
+#include <functional>
+#include <utility>
+
 namespace carve {
-	class tagable {
+	// NEXT-BIM: a creation number for the mesh objects (vertices, edges, faces, meshes, mesh sets, face loops), so that the
+	// containers keyed by their pointers hash and order them the same way on every run (by address they don't). The
+	// numbers come from a counter per thread that serial_reset sets at the start of each product's conversion (and of
+	// each task of a product run on another thread), so the same conversion numbers its objects the same way. Two objects
+	// numbered by different conversions may share a number: comparisons then fall back on their addresses.
+	struct serial_t {
+		uint64_t __serial;
+
+		static inline uint64_t& counter() {
+			static thread_local uint64_t s_serial = 0;
+			return s_serial;
+		}
+		serial_t() : __serial(++counter()) {}
+		serial_t(const serial_t&) : __serial(++counter()) {}
+		serial_t& operator=(const serial_t&) { return *this; }
+	};
+
+	inline void serial_reset(uint64_t base) { serial_t::counter() = base; }
+
+	template <typename T>
+	inline uint64_t serial_of(const T* p) { return p ? p->__serial : 0; }
+
+	struct serial_hash {
+		template <typename T>
+		size_t operator()(const T* p) const noexcept {
+			uint64_t x = serial_of(p) * 0x9E3779B97F4A7C15ull;
+			return (size_t)(x ^ (x >> 29));
+		}
+	};
+
+	struct serial_less {
+		template <typename T>
+		bool operator()(const T* a, const T* b) const noexcept {
+			uint64_t sa = serial_of(a), sb = serial_of(b);
+			return sa != sb ? sa < sb : std::less<const void*>()(a, b);
+		}
+	};
+
+	// serial_less for pointers to numbered objects, std::less for anything else
+	template <typename T, typename = void>
+	struct key_less : std::less<T> {};
+	template <typename T>
+	struct key_less<T*, decltype((void)std::declval<const T*>()->__serial)> : serial_less {};
+
+	// serial_less on the first pointers of two pairs, then on the second ones
+	struct serial_pair_less {
+		template <typename T, typename U>
+		bool operator()(const std::pair<T*, U*>& a, const std::pair<T*, U*>& b) const noexcept {
+			if (a.first != b.first) return serial_less()(a.first, b.first);
+			return serial_less()(a.second, b.second);
+		}
+	};
+
+	class tagable : public serial_t {
 	private:
 		static int s_count[48];
 

@@ -132,7 +132,10 @@ namespace {
 				std::make_pair(carve::geom::dot(v->v - base, dir), v));
 		}
 
-		std::sort(ordered_vertices.begin(), ordered_vertices.end());
+		// NEXT-BIM: ties broken by creation number, not address
+		std::sort(ordered_vertices.begin(), ordered_vertices.end(), [](const auto& a, const auto& b) {
+			return a.first != b.first ? a.first < b.first : carve::serial_less()(a.second, b.second);
+		});
 
 		out.clear();
 		out.reserve(ordered_vertices.size());
@@ -168,7 +171,10 @@ namespace {
 				std::make_pair(carve::geom::dot(v->v - base, dir), -ovec), v));
 		}
 
-		std::sort(ordered_vertices.begin(), ordered_vertices.end());
+		// NEXT-BIM: ties broken by creation number, not address
+		std::sort(ordered_vertices.begin(), ordered_vertices.end(), [](const auto& a, const auto& b) {
+			return a.first != b.first ? a.first < b.first : carve::serial_less()(a.second, b.second);
+		});
 
 		out.clear();
 		out.reserve(ordered_vertices.size());
@@ -1069,7 +1075,7 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass, deta
 			std::set_intersection(
 				face_a_intersections.begin(), face_a_intersections.end(),
 				face_b_intersections.begin(), face_b_intersections.end(),
-				std::back_inserter(vertices));
+				std::back_inserter(vertices), carve::serial_less()); // NEXT-BIM: the sets' order
 
 #if defined(CARVE_DEBUG)
 			std::cerr << "face pair: " << face_a << ":" << face_b << " N(verts) "
@@ -1199,7 +1205,7 @@ void carve::csg::CSG::makeFaceEdges(carve::csg::EdgeClassification& eclass, deta
 
 		carve::line::PolylineSet intersection_graph;
 		intersection_graph.vertices.resize(vertices.size());
-		std::map<const meshset_t::vertex_t*, size_t> vmap;
+		std::map<const meshset_t::vertex_t*, size_t, carve::serial_less> vmap;
 
 		size_t j = 0;
 		for( detail::VSet::const_iterator i = vertices.begin(); i != vertices.end();
@@ -1608,6 +1614,12 @@ carve::mesh::MeshSet<3>* carve::csg::CSG::compute( meshset_t* a, meshset_t* b, c
 		return nullptr;
 	}
 
+	// NEXT-BIM: the operation hashes the operands' objects by number (carve::serial_t): numbered from the operands only,
+	// so that the result depends only on them. The callers keep no ordered container of the operands' objects
+	uint64_t next = 1ull << 61;
+	carve::mesh::renumber(a, next);
+	carve::mesh::renumber(b, next);
+	carve::serial_reset(next);
 	Collector* coll = makeCollector(op, a, b);
 	if( !coll ) {
 		return nullptr;

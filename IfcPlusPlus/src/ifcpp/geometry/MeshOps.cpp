@@ -1922,8 +1922,8 @@ void MeshOps::resolveOpenEdges(shared_ptr<carve::mesh::MeshSet<3>>& meshset, Mes
 	size_t numFacesInput = 0;
 	size_t numOpenEdgesInput = 0;
 	size_t numClosedEdgesInput = 0;
-	std::set<carve::mesh::Edge<3>* > allOpenEdges;
-	std::set<carve::mesh::Edge<3>* > allEdges;
+	std::set<carve::mesh::Edge<3>* , carve::serial_less> allOpenEdges;
+	std::set<carve::mesh::Edge<3>* , carve::serial_less> allEdges;
 	for (size_t ii = 0; ii < meshset->meshes.size(); ++ii)
 	{
 		carve::mesh::Mesh<3>* mesh = meshset->meshes[ii];
@@ -2636,7 +2636,7 @@ void MeshOps::intersectOpenEdgesWithPoints(shared_ptr<carve::mesh::MeshSet<3> >&
 			std::copy(mesh->faces.begin(), mesh->faces.end(), std::back_inserter(allFaces));
 		}
 
-		std::set<carve::mesh::Face<3>* > setOpenEdgesAdjacentFaces;
+		std::set<carve::mesh::Face<3>* , carve::serial_less> setOpenEdgesAdjacentFaces;
 		for (size_t ii = 0; ii < allOpenEdges.size(); ++ii)
 		{
 			carve::mesh::Edge<3>* openEdge = allOpenEdges[ii];

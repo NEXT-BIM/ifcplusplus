@@ -79,7 +79,8 @@ void carve::csg::detail::LoopEdges::addFaceLoop(FaceLoop* fl) {
 
 void carve::csg::detail::LoopEdges::sortFaceLoopLists() {
   for (super::iterator i = begin(), e = end(); i != e; ++i) {
-    (*i).second.sort();
+    // NEXT-BIM: by creation number, not address
+    (*i).second.sort(carve::serial_less());
   }
 }
 

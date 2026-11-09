@@ -32,6 +32,7 @@
 #include <carve/rtree.hpp>
 
 #include <carve/poly.hpp>
+#include <cmath>
 #include <functional>
 
 namespace {
@@ -316,10 +317,10 @@ namespace carve {
 			void FaceStitcher::matchSimpleEdges()
 			{
 				// join faces that share an edge, where no other faces are incident.
-				for( edge_map_t::iterator i = edges.begin(); i != edges.end(); ++i )
+				for( edge_hash_t::iterator i = edges.begin(); i != edges.end(); ++i )
 				{
 					const vpair_t& ev = (*i).first;
-					edge_map_t::iterator j = edges.find(vpair_t(ev.second, ev.first));
+					edge_hash_t::iterator j = edges.find(vpair_t(ev.second, ev.first));
 					if( j == edges.end() )
 					{
 						for( edgelist_t::iterator k = (*i).second.begin(); k != (*i).second.end(); ++k )
@@ -1297,8 +1298,9 @@ carve::PointClass carve::mesh::classifyPoint(const carve::mesh::MeshSet<3>* mesh
 		}
 		else
 		{
-			a1 = random() / double(RAND_MAX) * M_TWOPI;
-			a2 = random() / double(RAND_MAX) * M_TWOPI;
+			// NEXT-BIM: not random(), whose global state the threads share: the same well spread directions every time
+			a1 = std::fmod(numIntersectionRuns * 0.6180339887498949, 1.0) * M_TWOPI;
+			a2 = std::fmod(numIntersectionRuns * 0.7548776662466927, 1.0) * M_TWOPI;
 		}
 
 		carve::geom3d::Vector ray_dir = carve::geom::VECTOR(sin(a1) * sin(a2), cos(a1) * sin(a2), cos(a2));
@@ -1390,7 +1392,7 @@ carve::PointClass carve::mesh::classifyPoint(const carve::mesh::MeshSet<3>* mesh
 				ray_dir, manifold_intersections.begin(), manifold_intersections.end(),
 				carve::geom3d::vec_adapt_pair_second());
 
-			std::map<const carve::mesh::Mesh<3>*, int> crossings;
+			std::map<const carve::mesh::Mesh<3>*, int, carve::serial_less> crossings;
 
 			for( size_t i = 0; i < manifold_intersections.size(); ++i ) {
 				const carve::mesh::Face<3>* f = manifold_intersections[i].first;
@@ -1403,7 +1405,7 @@ carve::PointClass carve::mesh::classifyPoint(const carve::mesh::MeshSet<3>* mesh
 			}
 
 #if defined(DEBUG_CONTAINS_VERTEX)
-			for( std::map<const carve::mesh::Mesh<3>*, int>::const_iterator i =
+			for( std::map<const carve::mesh::Mesh<3>*, int, carve::serial_less>::const_iterator i =
 				crossings.begin();
 				i != crossings.end(); ++i ) {
 				std::cerr << "{mesh " << (*i).first

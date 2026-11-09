@@ -236,7 +236,7 @@ public:
 		}
 
 		const size_t n_edges = face->n_edges;
-		std::set<carve::mesh::Edge<3>* > setEdgesToRemove;
+		std::set<carve::mesh::Edge<3>* , carve::serial_less> setEdgesToRemove;
 		for (size_t i_edge = 0; i_edge < n_edges; ++i_edge)
 		{
 			carve::mesh::Edge<3>* degenerateEdge = nullptr;
@@ -253,7 +253,7 @@ public:
 			{
 				// check if the vertex is used by other edges
 				degenerateEdge = e;
-				std::set<const carve::mesh::Edge<3>* > setEdgesReferencing;
+				std::set<const carve::mesh::Edge<3>* , carve::serial_less> setEdgesReferencing;
 				carve::mesh::Vertex<3>* vertex = e->vert;
 				countReferencesToVertex(e, vertex, setEdgesReferencing);
 				size_t numReferences = setEdgesReferencing.size();
@@ -266,7 +266,7 @@ public:
 					if (reverseEdge != nullptr)
 					{
 						carve::mesh::Vertex<3>* vertexReverseEdge = reverseEdge->vert;
-						std::set<const carve::mesh::Edge<3>* > setEdgesReferencingReferseEdge;
+						std::set<const carve::mesh::Edge<3>* , carve::serial_less> setEdgesReferencingReferseEdge;
 						countReferencesToVertex(reverseEdge, vertexReverseEdge, setEdgesReferencingReferseEdge);
 						size_t numReferencesReverse = setEdgesReferencingReferseEdge.size();
 
@@ -299,7 +299,7 @@ public:
 
 		for (carve::mesh::Edge<3>*edgeRemove : setEdgesToRemove)
 		{
-			std::set<carve::mesh::Face<3>* > setFacesToReplaceEdgePointer;
+			std::set<carve::mesh::Face<3>* , carve::serial_less> setFacesToReplaceEdgePointer;
 			if (face->edge == edgeRemove)
 			{
 				carve::mesh::Face<3>* faceNonConst = (carve::mesh::Face<3>*)face;
@@ -327,7 +327,7 @@ public:
 		}
 	}
 
-	static void countReferencesToVertex(const carve::mesh::Edge<3>* edge, const carve::mesh::Vertex<3>* vertex, std::set<const carve::mesh::Edge<3>* >& setEdgesReferencing)
+	static void countReferencesToVertex(const carve::mesh::Edge<3>* edge, const carve::mesh::Vertex<3>* vertex, std::set<const carve::mesh::Edge<3>* , carve::serial_less>& setEdgesReferencing)
 	{
 		if (!edge->face)
 		{

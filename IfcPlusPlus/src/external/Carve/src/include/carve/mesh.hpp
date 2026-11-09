@@ -54,6 +54,28 @@ namespace carve {
 		class Mesh;
 		template <unsigned int ndim>
 		class MeshSet;
+		template <unsigned int ndim>
+		class Vertex;
+	}  // namespace mesh
+}  // namespace carve
+
+// NEXT-BIM: pointers to mesh objects hash by their creation number (carve::serial_t), not their address. Ordered
+// containers take carve::serial_less explicitly: libc++'s std::set ignores a std::less specialization
+#define CARVE_SERIAL_POINTER_TRAITS(TEMPLATE_HEAD, T) \
+	namespace std { \
+	TEMPLATE_HEAD struct hash<T*> { size_t operator()(const T* p) const noexcept { return carve::serial_hash()(p); } }; \
+	TEMPLATE_HEAD struct hash<const T*> { size_t operator()(const T* p) const noexcept { return carve::serial_hash()(p); } }; \
+	}
+#define CARVE_SERIAL_TEMPLATE_HEAD template <unsigned int ndim>
+CARVE_SERIAL_POINTER_TRAITS(CARVE_SERIAL_TEMPLATE_HEAD, carve::mesh::Vertex<ndim>)
+CARVE_SERIAL_POINTER_TRAITS(CARVE_SERIAL_TEMPLATE_HEAD, carve::mesh::Edge<ndim>)
+CARVE_SERIAL_POINTER_TRAITS(CARVE_SERIAL_TEMPLATE_HEAD, carve::mesh::Face<ndim>)
+CARVE_SERIAL_POINTER_TRAITS(CARVE_SERIAL_TEMPLATE_HEAD, carve::mesh::Mesh<ndim>)
+CARVE_SERIAL_POINTER_TRAITS(CARVE_SERIAL_TEMPLATE_HEAD, carve::mesh::MeshSet<ndim>)
+#undef CARVE_SERIAL_TEMPLATE_HEAD
+
+namespace carve {
+	namespace mesh {
 
 		// A Vertex may participate in several meshes. If the Mesh belongs
 		// to a MeshSet, then the vertices come from the vertex_storage
@@ -99,15 +121,15 @@ namespace carve {
 		struct hash_vertex_pair {
 			template <unsigned int ndim>
 			size_t operator()(const std::pair<Vertex<ndim>*, Vertex<ndim>*>& pair) const {
-				size_t r = (size_t)pair.first;
-				size_t s = (size_t)pair.second;
+				size_t r = carve::serial_hash()(pair.first);
+				size_t s = carve::serial_hash()(pair.second);
 				return r ^ ((s >> 16) | (s << 16));
 			}
 			template <unsigned int ndim>
 			size_t operator()(
 				const std::pair<const Vertex<ndim>*, const Vertex<ndim>*>& pair) const {
-				size_t r = (size_t)pair.first;
-				size_t s = (size_t)pair.second;
+				size_t r = carve::serial_hash()(pair.first);
+				size_t s = carve::serial_hash()(pair.second);
 				return r ^ ((s >> 16) | (s << 16));
 			}
 		};
@@ -497,12 +519,23 @@ namespace carve {
 
 				typedef std::pair<const vertex_t*, const vertex_t*> vpair_t;
 				typedef std::list<edge_t*> edgelist_t;
-				typedef std::unordered_map<vpair_t, edgelist_t, carve::mesh::hash_vertex_pair> edge_map_t;
-				typedef std::unordered_map<const vertex_t*, std::set<const vertex_t*> > edge_graph_t;
+				// NEXT-BIM: ordered, so that the stitching doesn't depend on the vertices' addresses (hashed, a pointer's
+				// bucket does). The vertices of one mesh set are in one vector: their pointers are ordered like their indices.
+				// The edges matched at first stay hashed by address: matchSimpleEdges pairs them in any order
+				typedef std::map<vpair_t, edgelist_t> edge_map_t;
+				struct hash_vpair_address {
+					size_t operator()(const vpair_t& pair) const noexcept {
+						size_t r = (size_t)pair.first;
+						size_t s = (size_t)pair.second;
+						return r ^ ((s >> 16) | (s << 16));
+					}
+				};
+				typedef std::unordered_map<vpair_t, edgelist_t, hash_vpair_address> edge_hash_t;
+				typedef std::map<const vertex_t*, std::set<const vertex_t*> > edge_graph_t;
 
 				MeshOptions opts;
 
-				edge_map_t edges;
+				edge_hash_t edges;
 				edge_map_t complex_edges;
 
 				carve::djset::djset face_groups;
@@ -609,7 +642,7 @@ namespace carve {
 		// that the perimeter of an open mesh visits each vertex no more
 		// than once.
 		template <unsigned int ndim>
-		class Mesh {
+		class Mesh : public carve::serial_t {
 		public:
 			typedef Vertex<ndim> vertex_t;
 			typedef Edge<ndim> edge_t;
@@ -723,7 +756,7 @@ namespace carve {
 		// A MeshSet manages vertex storage, and a collection of meshes.
 		// It should be easy to turn a vertex pointer into its index in its MeshSet vertex_storage.
 		template <unsigned int ndim>
-		class MeshSet {
+		class MeshSet : public carve::serial_t {
 			MeshSet();
 			MeshSet(const MeshSet&);
 			MeshSet& operator=(const MeshSet&);
@@ -914,6 +947,39 @@ namespace carve {
 
 	mesh::MeshSet<3>* meshFromPolyhedron(const poly::Polyhedron*, int manifold_id);
 	poly::Polyhedron* polyhedronFromMesh(const mesh::MeshSet<3>*, int manifold_id);
+
+	namespace mesh {
+		// NEXT-BIM: numbers the mesh set's objects (carve::serial_t) in its own order, from next: vertices in storage
+		// order, then each mesh, its faces and their edges. An algorithm hashing mesh objects (by number) then depends
+		// only on its input, not on how many objects were numbered before it. No ordered container holding these
+		// objects may be used afterwards: their order changes
+		template <unsigned int ndim>
+		inline void renumber(MeshSet<ndim>* meshset, uint64_t& next)
+		{
+			if (!meshset)
+			{
+				return;
+			}
+			meshset->__serial = next++;
+			for (Vertex<ndim>& vertex : meshset->vertex_storage)
+			{
+				vertex.__serial = next++;
+			}
+			for (Mesh<ndim>* mesh : meshset->meshes)
+			{
+				mesh->__serial = next++;
+				for (Face<ndim>* face : mesh->faces)
+				{
+					face->__serial = next++;
+					Edge<ndim>* edge = face->edge;
+					for (size_t ii = 0; edge && ii < face->n_edges; ++ii, edge = edge->next)
+					{
+						edge->__serial = next++;
+					}
+				}
+			}
+		}
+	}  // namespace mesh
 }  // namespace carve
 
 #include <carve/mesh_impl.hpp>

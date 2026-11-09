@@ -274,7 +274,7 @@ struct Intersections
    */
   template <typename vertex_set_t, typename face_set_t>
   void commonFaces(const vertex_set_t& verts, face_set_t& result) {
-    std::set<face_t *> ifaces, temp, out;
+    std::set<face_t *, carve::serial_less> ifaces, temp, out;
     typename vertex_set_t::const_iterator i = verts.begin();
     if (i == verts.end()) {
       return;
@@ -285,8 +285,9 @@ struct Intersections
       intersectedFaces((*i), temp);
 
       out.clear();
+      // NEXT-BIM: in the sets' order (by creation number)
       std::set_intersection(temp.begin(), temp.end(), ifaces.begin(),
-                            ifaces.end(), set_inserter(out));
+                            ifaces.end(), set_inserter(out), carve::serial_less());
       ifaces.swap(out);
     }
     std::copy(ifaces.begin(), ifaces.end(), set_inserter(result));

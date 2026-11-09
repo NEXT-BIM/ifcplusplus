@@ -30,7 +30,7 @@ public:
 	size_t m_numCorrectedVertices = 0;
 	struct SetOfFacesInPlane {
 		carve::geom::plane<3> plane;
-		std::set<carve::mesh::Face<3>* > setFaces;
+		std::set<carve::mesh::Face<3>* , carve::serial_less> setFaces;
 	};
 	std::multimap<double, std::vector<shared_ptr<SetOfFacesInPlane> > > m_mapInPlaneFaces;
 
@@ -516,7 +516,7 @@ public:
 	size_t m_numCorrectedVertices = 0;
 	struct SetOfFacesInPlane {
 		carve::geom::plane<3> plane;
-		std::set<carve::mesh::Face<3>* > setFaces;
+		std::set<carve::mesh::Face<3>* , carve::serial_less> setFaces;
 	};
 	std::multimap<double, std::vector<shared_ptr<SetOfFacesInPlane> > > m_mapInPlaneFaces;
 

@@ -25,6 +25,7 @@
 #pragma once
 
 #include <carve/carve.hpp>
+#include <carve/mesh.hpp>
 
 namespace carve {
 namespace csg {
@@ -51,10 +52,25 @@ struct IObj {
   char typeChar() const { return "NVExF"[obtype]; }
 };
 
+// NEXT-BIM: the object's creation number (carve::serial_t) instead of its address
+static inline uint64_t iobj_serial(const IObj& i) {
+  switch (i.obtype) {
+    case IObj::OBTYPE_VERTEX: return carve::serial_of(i.vertex);
+    case IObj::OBTYPE_EDGE: return carve::serial_of(i.edge);
+    case IObj::OBTYPE_FACE: return carve::serial_of(i.face);
+    default: return 0;
+  }
+}
+
 struct IObj_hash {
-  inline size_t operator()(const IObj& i) const { return (size_t)i.val; }
+  inline size_t operator()(const IObj& i) const {
+    uint64_t x = (iobj_serial(i) * 8 + i.obtype) * 0x9E3779B97F4A7C15ull;
+    return (size_t)(x ^ (x >> 29));
+  }
   inline size_t operator()(const std::pair<const IObj, const IObj>& i) const {
-    return (size_t)i.first.val ^ (size_t)i.second.val;
+    size_t r = (*this)(i.first);
+    size_t s = (*this)(i.second);
+    return r ^ ((s >> 16) | (s << 16));
   }
 };
 
@@ -79,24 +95,27 @@ static inline bool operator!=(const carve::csg::IObj& a,
   return a.obtype != b.obtype || a.val != b.val;
 }
 
+// NEXT-BIM: ordered by creation number, then address (carve::serial_less)
 static inline bool operator<(const carve::csg::IObj& a,
                              const carve::csg::IObj& b) {
-  return a.obtype < b.obtype || (a.obtype == b.obtype && a.val < b.val);
+  if (a.obtype != b.obtype) return a.obtype < b.obtype;
+  uint64_t sa = carve::csg::iobj_serial(a), sb = carve::csg::iobj_serial(b);
+  return sa != sb ? sa < sb : a.val < b.val;
 }
 
 static inline bool operator<=(const carve::csg::IObj& a,
                               const carve::csg::IObj& b) {
-  return a.obtype < b.obtype || (a.obtype == b.obtype && a.val <= b.val);
+  return !(b < a);
 }
 
 static inline bool operator>(const carve::csg::IObj& a,
                              const carve::csg::IObj& b) {
-  return a.obtype > b.obtype || (a.obtype == b.obtype && a.val > b.val);
+  return b < a;
 }
 
 static inline bool operator>=(const carve::csg::IObj& a,
                               const carve::csg::IObj& b) {
-  return a.obtype > b.obtype || (a.obtype == b.obtype && a.val >= b.val);
+  return !(a < b);
 }
 
 static inline std::ostream& operator<<(std::ostream& o,

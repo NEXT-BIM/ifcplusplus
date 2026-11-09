@@ -827,7 +827,9 @@ void Mesh<ndim>::cacheEdges()
             {
                 open_edges.push_back(e);
             }
-            else if (e < e->rev)
+            // NEXT-BIM: the half edge from its lower vertex (by index in the mesh set's vertices), not the one at the
+            // lower address
+            else if (e->v1() != e->v2() ? e->v1() < e->v2() : e < e->rev)
             {
                 closed_edges.push_back(e);
             }

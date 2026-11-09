@@ -109,7 +109,7 @@ class CarveTriangulationImprover : public csg::CSG::Hook {
     // doing improvement as a separate hook is much messier than
     // just incorporating it into the triangulation hook.
 
-    typedef std::map<carve::mesh::Vertex<3>*, size_t> vert_map_t;
+    typedef std::map<carve::mesh::Vertex<3>*, size_t, carve::serial_less> vert_map_t;
     std::vector<carve::mesh::Face<3>*> out_faces;
     vert_map_t vert_map;
 

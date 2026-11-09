@@ -37,7 +37,8 @@ typedef std::pair<carve::mesh::Face<3>*, carve::mesh::Face<3>*> F2;
 
 static inline V2 ordered_edge(carve::mesh::Vertex<3>* a, carve::mesh::Vertex<3>* b)
 {
-  return V2(std::min(a, b), std::max(a, b));
+  // NEXT-BIM: by creation number, not address
+  return carve::serial_less()(b, a) ? V2(b, a) : V2(a, b);
 }
 
 static inline V2 flip(const V2& v)
