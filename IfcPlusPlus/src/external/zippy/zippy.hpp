@@ -10850,7 +10850,6 @@ namespace Zippy
 #ifdef _WIN32
                 _mkdir((dest + entry.Filename()).c_str());
 #else
-                mkdir((dest + entry.Filename()).c_str(), 0733);
 #endif
             }
 
