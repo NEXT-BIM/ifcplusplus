@@ -463,9 +463,11 @@ size_t MeshSimplifier::mergeAlignedEdges(shared_ptr<carve::mesh::MeshSet<3> >& m
 								carve::mesh::Vertex<3>* vertex2 = edge->v2();
 								carve::mesh::Vertex<3>* vertex3 = edge->next->v2();
 
+#ifdef _DEBUG
 								std::unordered_set<carve::mesh::Edge<3>* > setEdges;
 								getEdgesOnVertex(mesh, vertex2, setEdges);
 								size_t numEdgesOnVertex = setEdges.size();
+#endif
 
 								const carve::geom::vector<3>& p1 = vertex1->v;
 								const carve::geom::vector<3>& p2 = vertex2->v;
@@ -513,9 +515,11 @@ size_t MeshSimplifier::mergeAlignedEdges(shared_ptr<carve::mesh::MeshSet<3> >& m
 									}
 #endif
 
+#ifdef _DEBUG
 									std::unordered_set<carve::mesh::Edge<3>* > setEdgePointersToRemovedEdge;
 									std::unordered_set<carve::mesh::Face<3>* > setFacePointersToRemovedEdge;
 									getPointerToEdge(mesh, edgeRemove, setEdgePointersToRemovedEdge, setFacePointersToRemovedEdge);
+#endif
 									size_t numVertexChanges = removePointerToVertex(mesh, vertex2, vertex1);
 									edge = edgeRemove->removeEdge();  // returns ->next
 									carve::geom::vector<3> distanceV1 = edge->v1()->v - p1;
@@ -525,8 +529,12 @@ size_t MeshSimplifier::mergeAlignedEdges(shared_ptr<carve::mesh::MeshSet<3> >& m
 									//MeshOps::removeZeroAreaFacesInMesh(mesh, epsMinFaceArea, eps, dumpFaces);
 
 									++numEdgesRemoved;
+									// NEXT-BIM: this loop only follows the edges' pointers, so the edge lists, face planes
+									// and orientation of the meshes are recomputed once, after it
+#ifdef _DEBUG
 									mesh->cacheEdges();
 									mesh->recalc(params.epsMergePoints);
+#endif
 
 									//      edge->rev->next         edge->rev                                    edge->next->rev  
 									//  <--------------------v1<---------------------------------------------v2<------------------------
