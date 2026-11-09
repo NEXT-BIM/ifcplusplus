@@ -43,6 +43,8 @@ public:
 	
 	/// \brief retriangulateMeshSetForExport: triangulate mesh, with priority of not skipping triangles, mesh does not need to be closed and valid for boolean operations
 	static void retriangulateMeshSetForExport(const shared_ptr<carve::mesh::MeshSet<3> >& meshset, PolyInputCache3D& polyOut, const GeomProcessingParams& params);
+	/// \brief retriangulateMeshSetForExport: replaces the meshset by its triangulation when that's better for export (NEXT-BIM)
+	static void retriangulateMeshSetForExport(shared_ptr<carve::mesh::MeshSet<3> >& meshset, const GeomProcessingParams& params);
 
 	static void intersectOpenEdgesWithPoints(shared_ptr<carve::mesh::MeshSet<3> >& meshset, const GeomProcessingParams& params);
 

@@ -1039,6 +1039,49 @@ void MeshOps::retriangulateMeshSetForExport( const shared_ptr<carve::mesh::MeshS
 //	checkAndFixMeshsetInverted(meshset, infoTriangulated, params);
 }
 
+// NEXT-BIM: the meshset replaced by its triangulation, as retriangulateMeshSetForExport did before upstream made it fill a
+// PolyInputCache3D: a meshset of triangles is kept as it is, the triangulation only replaces a meshset it's better than
+// for export, and the meshes of the result that are inside out are inverted
+void MeshOps::retriangulateMeshSetForExport(shared_ptr<carve::mesh::MeshSet<3> >& meshset, const GeomProcessingParams& paramsInput)
+{
+	if (!meshset)
+	{
+		return;
+	}
+
+	MeshSetInfo infoInput;
+	MeshOps::checkMeshSetValidAndClosed(meshset, infoInput, paramsInput);
+	MeshOps::checkMeshSetNonNegativeAndClosed(meshset, paramsInput);
+	if (infoInput.maxNumberOfEdgesPerFace == 3)
+	{
+		return;
+	}
+
+	PolyInputCache3D polyOut(paramsInput.epsMergePoints);
+	retriangulateMeshSetForExport(meshset, polyOut, paramsInput);
+
+	GeomProcessingParams params(paramsInput);
+	params.checkZeroAreaFaces = false;
+	params.allowDegenerateEdges = true;
+	params.allowFinEdges = true;
+	params.mergeAlignedEdges = true;
+	std::string details;
+	if (!checkPolyhedronData(polyOut.m_poly_data, params, details))
+	{
+		fixPolyhedronData(polyOut.m_poly_data, params);
+	}
+
+	shared_ptr<carve::mesh::MeshSet<3> > meshsetTriangulated(polyOut.m_poly_data->createMesh(carve::input::opts(), params.epsMergePoints));
+	MeshSetInfo infoTriangulated;
+	MeshOps::checkMeshSetValidAndClosed(meshsetTriangulated, infoTriangulated, params);
+	if (isBetterForExport(infoTriangulated, infoInput))
+	{
+		meshset = meshsetTriangulated;
+	}
+
+	checkAndFixMeshsetInverted(meshset, infoTriangulated, params);
+}
+
 void MeshOps::simplifyMeshSet(shared_ptr<carve::mesh::MeshSet<3> >& meshset, MeshSetInfo& infoMeshOut, const GeomProcessingParams& params)
 {
 	if (!meshset)
