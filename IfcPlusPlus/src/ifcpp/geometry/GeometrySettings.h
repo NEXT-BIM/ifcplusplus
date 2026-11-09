@@ -68,7 +68,7 @@ public:
 	GeometrySettings(const shared_ptr<GeometrySettings>& other)
 	{
 		m_excludeIfcTypes = other->m_excludeIfcTypes;
-		m_renderOnlyIfcTypes = other->m_excludeIfcTypes;
+		m_renderOnlyIfcTypes = other->m_renderOnlyIfcTypes;
 		m_maxNumFaceEdges = other->m_maxNumFaceEdges;
 		m_num_vertices_per_circle = other->m_num_vertices_per_circle;
 		m_num_vertices_per_circle_default = other->m_num_vertices_per_circle_default;
