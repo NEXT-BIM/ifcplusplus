@@ -39,6 +39,7 @@
 #endif
 
 #include <math.h>
+#include <cstdint>
 
 #include <iomanip>
 #include <list>

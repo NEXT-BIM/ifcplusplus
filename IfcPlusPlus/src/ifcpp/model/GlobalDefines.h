@@ -16,6 +16,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 */
 
 #pragma once
+#include <cstdint>
 
 #pragma warning (disable: 4250 4251 4996)
 #ifndef BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE
