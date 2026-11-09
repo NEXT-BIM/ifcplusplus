@@ -2787,7 +2787,12 @@ void MeshOps::intersectOpenEdgesWithPoints(shared_ptr<carve::mesh::MeshSet<3> >&
 			}
 		}
 
-		if (numSplitEdges > 0)
+		// A round that leaves the meshset as it was would be repeated identically
+		if (numSplitEdges == 0)
+		{
+			break;
+		}
+
 		{
 			std::string details = "";
 			bool correct = checkPolyhedronData(polyInput.m_poly_data, params, details);
@@ -2810,7 +2815,10 @@ void MeshOps::intersectOpenEdgesWithPoints(shared_ptr<carve::mesh::MeshSet<3> >&
 			MeshSetInfo infoInput;
 			checkMeshSetValidAndClosed(meshsetInput, infoInput, params);
 
-			assignIfBetterForBoolOp(meshsetNew, meshsetInput, infoNew, infoInput, false, params, false);
+			if (!assignIfBetterForBoolOp(meshsetNew, meshsetInput, infoNew, infoInput, false, params, false))
+			{
+				break;
+			}
 
 #ifdef _DEBUG
 			if (params.debugDump)
