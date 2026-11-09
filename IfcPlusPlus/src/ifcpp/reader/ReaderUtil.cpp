@@ -1142,7 +1142,7 @@ static void decodeStepString(const std::string& argument_str, std::string& arg_o
 						combined16[0] = checkAndConvertAppleEncoding(combined16[0]);
 					}
 					std::u16string u16str(combined16, 1);
-					std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert("\xEF\xBF\xBD"); // invalid UTF-16 becomes U+FFFD instead of throwing std::range_error
+					thread_local std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert("\xEF\xBF\xBD"); // invalid UTF-16 becomes U+FFFD instead of throwing std::range_error
 					std::string utf8 = convert.to_bytes(u16str);
 
 					arg_str_new += utf8;
@@ -1212,7 +1212,7 @@ static void decodeStepString(const std::string& argument_str, std::string& arg_o
 						} while ((*stream_pos != '\0'));
 
 						std::u16string u16str(reinterpret_cast<char16_t*>(utf16Characters.data()), utf16Characters.size() / 2);
-						std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert("\xEF\xBF\xBD"); // invalid UTF-16 becomes U+FFFD instead of throwing std::range_error
+						thread_local std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert("\xEF\xBF\xBD"); // invalid UTF-16 becomes U+FFFD instead of throwing std::range_error
 						std::string utf8 = convert.to_bytes(u16str);
 						arg_str_new += utf8;
 					}
@@ -1254,7 +1254,7 @@ static void decodeStepString(const std::string& argument_str, std::string& arg_o
 							stream_pos += 8;
 						}
 
-						std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert("\xEF\xBF\xBD"); // invalid code points become U+FFFD instead of throwing std::range_error
+						thread_local std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> convert("\xEF\xBF\xBD"); // invalid code points become U+FFFD instead of throwing std::range_error
 						arg_str_new += convert.to_bytes(u32str);
 						continue;
 					}
