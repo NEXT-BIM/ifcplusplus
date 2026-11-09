@@ -750,6 +750,158 @@ void MeshOps::classifyMeshesInside(std::vector<carve::mesh::Mesh<3>*>& meshes, s
 }
 
 
+// NEXT-BIM: a face whose holes are joined to its outline by bridges, one edge walked both ways (the faces merged
+// around an opening come out that way), cut at its bridges into its outlines (counterclockwise around the face's
+// normal) and its holes (clockwise), each hole with the outline containing it. Triangulated as one loop, such a face
+// could get a triangle across a hole: a window opening closed on one side of its wall
+static void splitFaceLoopAtBridges(const carve::mesh::Face<3>* face, std::vector<std::vector<std::vector<vec3> > >& polygons)
+{
+	std::vector<const carve::mesh::Vertex<3>*> loop;
+	const carve::mesh::Edge<3>* edge = face->edge;
+	for (size_t ii = 0; edge && ii < face->n_edges; ++ii, edge = edge->next)
+	{
+		loop.push_back(edge->vert);
+	}
+
+	std::vector<const carve::mesh::Vertex<3>*> sorted(loop);
+	std::sort(sorted.begin(), sorted.end());
+	bool repeatsVertex = std::adjacent_find(sorted.begin(), sorted.end()) != sorted.end();
+
+	auto positions = [](const std::vector<const carve::mesh::Vertex<3>*>& vertices)
+	{
+		std::vector<vec3> points;
+		for (const carve::mesh::Vertex<3>* vertex : vertices)
+		{
+			points.push_back(vertex->v);
+		}
+		return points;
+	};
+
+	if (!repeatsVertex)
+	{
+		polygons.push_back({ positions(loop) });
+		return;
+	}
+
+	std::vector<std::vector<const carve::mesh::Vertex<3>*> > todo = { loop };
+	std::vector<std::vector<const carve::mesh::Vertex<3>*> > loops;
+	while (!todo.empty())
+	{
+		std::vector<const carve::mesh::Vertex<3>*> current = std::move(todo.back());
+		todo.pop_back();
+		const size_t num = current.size();
+		bool split = false;
+		for (size_t ii = 0; ii < num && !split; ++ii)
+		{
+			for (size_t jj = ii + 1; jj < num && !split; ++jj)
+			{
+				// edge ii goes current[ii] -> current[ii + 1], edge jj back
+				if (current[ii] == current[(jj + 1) % num] && current[(ii + 1) % num] == current[jj])
+				{
+					std::vector<const carve::mesh::Vertex<3>*> inside(current.begin() + ii + 1, current.begin() + jj);
+					std::vector<const carve::mesh::Vertex<3>*> outside(current.begin() + jj + 1, current.end());
+					outside.insert(outside.end(), current.begin(), current.begin() + ii);
+					todo.push_back(std::move(inside));
+					todo.push_back(std::move(outside));
+					split = true;
+				}
+			}
+		}
+		if (!split && current.size() >= 3)
+		{
+			loops.push_back(std::move(current));
+		}
+	}
+
+	// the whole loop's normal (Newell's): the outlines' area is larger than the holes'
+	vec3 faceNormal = carve::geom::VECTOR(0, 0, 0);
+	for (size_t ii = 0; ii < loop.size(); ++ii)
+	{
+		faceNormal += carve::geom::cross(loop[ii]->v, loop[(ii + 1) % loop.size()]->v);
+	}
+	int dropAxis = carve::geom::largestAxis(faceNormal);
+	auto project = [dropAxis](const vec3& point)
+	{
+		return dropAxis == 0 ? carve::geom::VECTOR(point.y, point.z) : dropAxis == 1 ? carve::geom::VECTOR(point.x, point.z) : carve::geom::VECTOR(point.x, point.y);
+	};
+	auto orientedArea = [&](const std::vector<const carve::mesh::Vertex<3>*>& vertices)
+	{
+		vec3 normal = carve::geom::VECTOR(0, 0, 0);
+		for (size_t ii = 0; ii < vertices.size(); ++ii)
+		{
+			const vec3& a = vertices[ii]->v;
+			const vec3& b = vertices[(ii + 1) % vertices.size()]->v;
+			normal += carve::geom::cross(a, b);
+		}
+		return dot(normal, faceNormal) * 0.5;
+	};
+	auto contains = [&](const std::vector<const carve::mesh::Vertex<3>*>& outline, const carve::geom::vector<2>& point)
+	{
+		bool inside = false;
+		for (size_t ii = 0, jj = outline.size() - 1; ii < outline.size(); jj = ii++)
+		{
+			carve::geom::vector<2> a = project(outline[ii]->v);
+			carve::geom::vector<2> b = project(outline[jj]->v);
+			if ((a.y > point.y) != (b.y > point.y) && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x)
+			{
+				inside = !inside;
+			}
+		}
+		return inside;
+	};
+
+	std::vector<size_t> outlines;
+	std::vector<size_t> holes;
+	for (size_t ii = 0; ii < loops.size(); ++ii)
+	{
+		(orientedArea(loops[ii]) > 0 ? outlines : holes).push_back(ii);
+	}
+	if (outlines.empty())
+	{
+		polygons.push_back({ positions(loop) });
+		return;
+	}
+
+	std::vector<std::vector<size_t> > holesOfOutline(outlines.size());
+	for (size_t hole : holes)
+	{
+		carve::geom::vector<2> centroid = carve::geom::VECTOR(0, 0);
+		for (const carve::mesh::Vertex<3>* vertex : loops[hole])
+		{
+			centroid += project(vertex->v);
+		}
+		centroid /= (double)loops[hole].size();
+
+		// the smallest outline containing it, else the largest one
+		size_t best = 0;
+		bool bestContains = false;
+		double bestArea = 0;
+		for (size_t ii = 0; ii < outlines.size(); ++ii)
+		{
+			double area = orientedArea(loops[outlines[ii]]);
+			bool containsHole = contains(loops[outlines[ii]], centroid);
+			bool better = ii == 0 || (containsHole && !bestContains) || (containsHole == bestContains && (containsHole ? area < bestArea : area > bestArea));
+			if (better)
+			{
+				best = ii;
+				bestContains = containsHole;
+				bestArea = area;
+			}
+		}
+		holesOfOutline[best].push_back(hole);
+	}
+
+	for (size_t ii = 0; ii < outlines.size(); ++ii)
+	{
+		std::vector<std::vector<vec3> > polygon = { positions(loops[outlines[ii]]) };
+		for (size_t hole : holesOfOutline[ii])
+		{
+			polygon.push_back(positions(loops[hole]));
+		}
+		polygons.push_back(std::move(polygon));
+	}
+}
+
 void MeshOps::retriangulateMeshSetForExport( const shared_ptr<carve::mesh::MeshSet<3> >& meshset, PolyInputCache3D& polyOut, const GeomProcessingParams& paramsInput)
 {
 	if (!meshset)
@@ -810,14 +962,12 @@ void MeshOps::retriangulateMeshSetForExport( const shared_ptr<carve::mesh::MeshS
 				continue;
 			}
 
-			std::vector<std::vector<vec3> > inputBounds3D;
-			inputBounds3D.resize(1);
-			std::vector<vec3>& firstBound = inputBounds3D[0];
-			for (size_t i3 = 0; i3 < faceBound.size(); ++i3)
+			std::vector<std::vector<std::vector<vec3> > > polygons;
+			splitFaceLoopAtBridges(face, polygons);
+			for (std::vector<std::vector<vec3> >& polygon : polygons)
 			{
-				firstBound.push_back( faceBound[i3]->v );
+				FaceConverter::createTriangulated3DFace(polygon, polyOut, params, false);
 			}
-			FaceConverter::createTriangulated3DFace(inputBounds3D, polyOut, params, false);
 		}
 	}
 
