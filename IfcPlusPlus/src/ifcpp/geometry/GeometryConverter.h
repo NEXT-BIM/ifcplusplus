@@ -19,7 +19,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 
 // #define _DEBUG_LOOP_SEQENTIAL  // define for debugging geometry conversion
 
+#include <algorithm>
+#include <iomanip>
 #include <map>
+#include <random>
+#include <sstream>
 #include <thread>
 #include <unordered_set>
 #include <ifcpp/model/BasicTypes.h>
@@ -935,7 +939,6 @@ public:
 	{
 		// the model's entities are not removed here: the model must stay complete, so that it can be written after the geometry conversion
 		const std::unordered_map<int, shared_ptr<BuildingEntity> >& map_entities = m_ifc_model->getMapIfcEntities();
-		std::unordered_set<std::string> setGuids;
 		if (map_entities.size() > 0)
 		{
 			for (auto it = map_entities.begin(); it != map_entities.end(); ++it)
@@ -946,29 +949,6 @@ public:
 					shared_ptr<IfcRoot> root = dynamic_pointer_cast<IfcRoot>(entity);
 					if (root)
 					{
-						std::string guid;
-						if (root->m_GlobalId)
-						{
-							guid = root->m_GlobalId->m_value;
-
-							if (setGuids.find(guid) != setGuids.end())
-							{
-								// product shapes are mapped by GUID, so the duplicate gets a new valid GUID
-								std::string guid_duplicate = guid;
-								do
-								{
-									guid = createBase64Uuid();
-								} while (setGuids.find(guid) != setGuids.end());
-
-								std::string error = "duplicate GUID in model: " + guid_duplicate + ", replaced by " + guid + " in #" + std::to_string(root->m_tag);
-								messageCallback(error, StatusCallback::MESSAGE_TYPE_ERROR, __FUNC__);
-
-								root->m_GlobalId->m_value = guid;
-							}
-
-							setGuids.insert(guid);
-						}
-
 						shared_ptr<IfcObjectDefinition> object_def = dynamic_pointer_cast<IfcObjectDefinition>(root);
 						if (object_def)
 						{
@@ -989,6 +969,64 @@ public:
 					}
 				}
 			}
+		}
+
+		// NEXT-BIM: product shapes are mapped by GUID, so the object definitions must have distinct GUIDs. Upstream gave
+		// every IfcRoot after the first with a GUID (in the entity hash map's order) a random new one: a product could
+		// lose its GUID to a property set or a relationship, and get another one on every import. Only the object
+		// definitions take part, in tag order, the products before the others, and a duplicate's new GUID is derived from
+		// its GUID and tag
+		std::sort(vecObjectDefinitions.begin(), vecObjectDefinitions.end(), [](const shared_ptr<IfcObjectDefinition>& a, const shared_ptr<IfcObjectDefinition>& b) { return a->m_tag < b->m_tag; });
+		std::vector<shared_ptr<IfcObjectDefinition> > objectDefinitionsByPriority;
+		objectDefinitionsByPriority.reserve(vecObjectDefinitions.size());
+		for (int products = 1; products >= 0; --products)
+		{
+			for (const shared_ptr<IfcObjectDefinition>& object_def : vecObjectDefinitions)
+			{
+				if ((dynamic_pointer_cast<IfcProduct>(object_def) != nullptr) == (products == 1))
+				{
+					objectDefinitionsByPriority.push_back(object_def);
+				}
+			}
+		}
+		std::unordered_set<std::string> setGuids;
+		setGuids.reserve(objectDefinitionsByPriority.size());
+		for (const shared_ptr<IfcObjectDefinition>& object_def : objectDefinitionsByPriority)
+		{
+			if (!object_def->m_GlobalId)
+			{
+				continue;
+			}
+			std::string guid = object_def->m_GlobalId->m_value;
+			if (setGuids.find(guid) != setGuids.end())
+			{
+				const std::string guid_duplicate = guid;
+				uint64_t seed = 14695981039346656037ull;
+				for (char c : guid_duplicate + "#" + std::to_string(object_def->m_tag))
+				{
+					seed = (seed ^ (uint8_t)c) * 1099511628211ull;
+				}
+				std::mt19937_64 generator(seed);
+				do
+				{
+					std::stringstream uuid;
+					uuid << std::uppercase << std::hex << std::setfill('0');
+					uint64_t high = generator();
+					uint64_t low = generator();
+					// a random (version 4, variant 1) UUID, as createGUID32 makes them
+					high = (high & 0xFFFFFFFFFFFF0FFFull) | 0x0000000000004000ull;
+					low = (low & 0x3FFFFFFFFFFFFFFFull) | 0x8000000000000000ull;
+					uuid << std::setw(8) << (high >> 32) << "-" << std::setw(4) << ((high >> 16) & 0xFFFF) << "-" << std::setw(4) << (high & 0xFFFF) << "-"
+						<< std::setw(4) << (low >> 48) << "-" << std::setw(12) << (low & 0xFFFFFFFFFFFFull);
+					guid = compressGUID(uuid.str());
+				} while (setGuids.find(guid) != setGuids.end());
+
+				std::string error = "duplicate GUID in model: " + guid_duplicate + ", replaced by " + guid + " in #" + std::to_string(object_def->m_tag);
+				messageCallback(error, StatusCallback::MESSAGE_TYPE_ERROR, __FUNC__);
+
+				object_def->m_GlobalId->m_value = guid;
+			}
+			setGuids.insert(guid);
 		}
 	}
 
