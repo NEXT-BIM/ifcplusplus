@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 #include "EdgeLoopFinder.h"
 #include "MeshSimplifier.h"
 #include "MeshOps.h"
+#include <numeric>
 using namespace IFC4X3;
 
 size_t MeshOps::getNumFaces(const carve::mesh::MeshSet<3>* meshset)
@@ -2643,6 +2644,29 @@ void MeshOps::intersectOpenEdgesWithPoints(shared_ptr<carve::mesh::MeshSet<3> >&
 			setOpenEdgesAdjacentFaces.insert(adjacentFace);
 		}
 
+		// NEXT-BIM: the loop below gives up, leaving the meshset as it is, at its face past maxNumFaces or at a face of
+		// more than maxNumEdges edges: such a meshset gives up before any work
+		bool givesUp = allFaces.size() > maxNumFaces + 1;
+		for (size_t iiFace = 0; iiFace < allFaces.size() && !givesUp; ++iiFace)
+		{
+			givesUp = allFaces[iiFace]->n_edges > maxNumEdges;
+		}
+		if (givesUp)
+		{
+			return;
+		}
+
+		// NEXT-BIM: the vertices sorted along each axis, built at the first edge to test. isPointOnLineSegment only
+		// accepts a point closer than eps to the segment, so each edge only tests the vertices within its range along
+		// one axis (the one with the fewest), in their storage order: the same points in the same order as testing them
+		// all. A meshset with a non finite coordinate tests them all.
+		const std::vector<carve::mesh::Vertex<3> >& vertexStorage = meshsetInput->vertex_storage;
+		std::vector<size_t> verticesAlongAxis[3];
+		std::vector<double> coordsAlongAxis[3];
+		std::vector<size_t> candidateVertices;
+		bool verticesSorted = false;
+		bool verticesFinite = true;
+
 		PolyInputCache3D polyInput(params.epsMergePoints);
 
 		// intersect with closed edges
@@ -2696,10 +2720,61 @@ void MeshOps::intersectOpenEdgesWithPoints(shared_ptr<carve::mesh::MeshSet<3> >&
 
 					std::map<double, vec3> mapIntersections;
 
-					// check if current edge needs to be split
-					for (size_t iiVertex = 0; iiVertex < meshsetInput->vertex_storage.size(); ++iiVertex)
+					if (!verticesSorted)
 					{
-						const carve::mesh::Vertex<3>& vert = meshsetInput->vertex_storage[iiVertex];
+						verticesSorted = true;
+						for (const carve::mesh::Vertex<3>& vertex : vertexStorage)
+						{
+							verticesFinite = verticesFinite && std::isfinite(vertex.v.x) && std::isfinite(vertex.v.y) && std::isfinite(vertex.v.z);
+						}
+						for (int axis = 0; axis < 3 && verticesFinite; ++axis)
+						{
+							std::vector<size_t>& sorted = verticesAlongAxis[axis];
+							sorted.resize(vertexStorage.size());
+							std::iota(sorted.begin(), sorted.end(), 0);
+							std::sort(sorted.begin(), sorted.end(), [&](size_t a, size_t b) { return vertexStorage[a].v[axis] < vertexStorage[b].v[axis]; });
+							coordsAlongAxis[axis].resize(sorted.size());
+							for (size_t ii = 0; ii < sorted.size(); ++ii)
+							{
+								coordsAlongAxis[axis][ii] = vertexStorage[sorted[ii]].v[axis];
+							}
+						}
+					}
+
+					size_t bestBegin = 0;
+					size_t bestEnd = vertexStorage.size();
+					int bestAxis = 0;
+					for (int axis = 0; axis < 3 && verticesFinite; ++axis)
+					{
+						// rounding errors are far below the margin
+						double lo = std::min(edgePoint1[axis], edgePoint2[axis]);
+						double hi = std::max(edgePoint1[axis], edgePoint2[axis]);
+						double margin = 2.0 * eps + 1e-12 * (std::abs(lo) + std::abs(hi));
+						const std::vector<double>& coords = coordsAlongAxis[axis];
+						size_t begin = std::lower_bound(coords.begin(), coords.end(), lo - margin) - coords.begin();
+						size_t end = std::upper_bound(coords.begin(), coords.end(), hi + margin) - coords.begin();
+						if (end - begin < bestEnd - bestBegin)
+						{
+							bestBegin = begin;
+							bestEnd = end;
+							bestAxis = axis;
+						}
+					}
+					if (verticesFinite)
+					{
+						candidateVertices.assign(verticesAlongAxis[bestAxis].begin() + bestBegin, verticesAlongAxis[bestAxis].begin() + bestEnd);
+						std::sort(candidateVertices.begin(), candidateVertices.end());
+					}
+					else
+					{
+						candidateVertices.resize(vertexStorage.size());
+						std::iota(candidateVertices.begin(), candidateVertices.end(), 0);
+					}
+
+					// check if current edge needs to be split
+					for (size_t iiVertex : candidateVertices)
+					{
+						const carve::mesh::Vertex<3>& vert = vertexStorage[iiVertex];
 						vec3 vertexPoint = vert.v;
 
 						double t = -1;
