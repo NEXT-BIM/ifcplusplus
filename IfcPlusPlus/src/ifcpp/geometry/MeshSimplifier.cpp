@@ -149,15 +149,15 @@ void MeshSimplifier::simplifyMeshSet(shared_ptr<carve::mesh::MeshSet<3> >& meshs
 	{
 		removeDegenerateFacesInMeshSet(meshset, params);
 
-		const clock_t begin_time = clock();
-		bool mergedFacesMeshShouldBeClosed = false;  // allow open edges, will try to sew them together later
-		size_t numChanges = mergeCoplanarFacesInMeshSet(meshset, params, mergedFacesMeshShouldBeClosed);
-		int millisecs = (clock() - begin_time);
-		if (millisecs > 5 && numChanges == 0)
+		// NEXT-BIM: mergeCoplanarFacesInMeshSet(meshset, params, false) isn't called: with shouldBeClosedManifold false
+		// it puts back the copy of the mesh set it took before merging whenever it merged anything, so its merges
+		// never reached the result, and they cost a quarter of the geometry step of architecture models. Only its
+		// validity check is kept, which inverts the meshes removeDegenerateFacesInMeshSet may have left negative
 		{
-#if defined _DEBUG || defined _DEBUG_RELEASE
-			std::cout << "no success in mergeCoplanarFacesInMeshSet, vertex count: " << meshset->vertex_storage.size() << std::endl;
-#endif
+			GeomProcessingParams paramsCheck(params);
+			paramsCheck.allowFinEdges = false;
+			MeshSetInfo infoCheck;
+			MeshOps::checkMeshSetValidAndClosed(meshset, infoCheck, paramsCheck);
 		}
 
 		size_t numEdgesRemoved = mergeAlignedEdges(meshset, params);
