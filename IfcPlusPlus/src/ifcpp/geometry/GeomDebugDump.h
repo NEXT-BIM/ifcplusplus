@@ -366,7 +366,7 @@ namespace GeomDebugDump
 		dumpPolyline(poly_3d_carve, color, lineThickness, move_dump_position, depthTestOff);
 	}
 
-	static void dumpPolyline(const std::vector<vec2>& vec_polyline, const vec4& color, double lineThickness, bool move_dump_position, bool depthTestOff)
+	inline void dumpPolyline(const std::vector<vec2>& vec_polyline, const vec4& color, double lineThickness, bool move_dump_position, bool depthTestOff)
 	{
 		if (vec_polyline.size() < 1)
 		{

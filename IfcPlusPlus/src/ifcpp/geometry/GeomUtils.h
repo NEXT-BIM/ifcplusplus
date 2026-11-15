@@ -40,7 +40,7 @@ typedef std::array<double, 2> array2d;
 
 namespace GeomDebugDump
 {
-	void dumpPolyline(const std::vector<vec2>& vec_polyline, const vec4& color, double lineThickness, bool move_dump_position, bool depthTestOff);
+	inline void dumpPolyline(const std::vector<vec2>& vec_polyline, const vec4& color, double lineThickness, bool move_dump_position, bool depthTestOff);
 }
 
 namespace GeomUtils
