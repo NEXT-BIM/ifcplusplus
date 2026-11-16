@@ -17,6 +17,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OU
 
 #pragma once
 
+#include <functional>
+
 // #define _DEBUG_LOOP_SEQENTIAL  // define for debugging geometry conversion
 
 #include <algorithm>
@@ -90,9 +92,12 @@ public:
 	bool m_clear_memory_immedeately = true;
 	bool m_set_model_to_origin = false;
 
-	//\ brief: ElementConvertedCallback will be called after each IfcProduct geometry is converted, in case you want to directly stream the meshes somewhere
-	//using ElementConvertedCallbackType = std::function<void(shared_ptr<ProductShapeData>)>;
-	//ElementConvertedCallbackType elementConvertedCallbackHandler;
+	// NEXT-BIM: called from the conversion threads with each product whose geometry is final once converted, for the
+	// caller to take its meshes and free them: otherwise every product's meshes wait for the end of convertGeometry, and
+	// a large model's Carve meshes take tens of GB. Not called for the products aggregated into an element that has
+	// openings: subtractOpeningsInRelatedObjects subtracts the openings from them after every product is converted.
+	using ElementConvertedCallbackType = std::function<void(shared_ptr<ProductShapeData>&)>;
+	ElementConvertedCallbackType elementConvertedCallbackHandler;
 	//void setElementConvertedCallback(const ElementConvertedCallbackType& cb)
 	//{
 	//	elementConvertedCallbackHandler = cb;
@@ -821,6 +826,11 @@ public:
 					m_product_shape_data[guid] = product_geom_input_data;
 				}
 
+				if (elementConvertedCallbackHandler && !hasOpeningsSubtractedLater(object_def))
+				{
+					elementConvertedCallbackHandler(product_geom_input_data);
+				}
+
 				if (thread_err.tellp() > 0)
 				{
 					messageCallback(thread_err.str().c_str(), StatusCallback::MESSAGE_TYPE_ERROR, __FUNC__);
@@ -1168,6 +1178,26 @@ public:
 				ifc_product->m_Representation.reset();
 			}
 		}
+	}
+
+	// NEXT-BIM: whether subtractOpeningsInRelatedObjects changes the object's geometry after convertGeometry's first pass:
+	// when an element that aggregates it has openings
+	static bool hasOpeningsSubtractedLater(const shared_ptr<IfcObjectDefinition>& object_def)
+	{
+		for (const weak_ptr<IfcRelAggregates>& decomposes_weak : object_def->m_Decomposes_inverse)
+		{
+			shared_ptr<IfcRelAggregates> decomposes = decomposes_weak.lock();
+			if (!decomposes)
+			{
+				continue;
+			}
+			shared_ptr<IfcElement> element = dynamic_pointer_cast<IfcElement>(decomposes->m_RelatingObject);
+			if (element && !element->m_HasOpenings_inverse.empty())
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void subtractOpeningsInRelatedObjects(shared_ptr<ProductShapeData>& product_shape)
